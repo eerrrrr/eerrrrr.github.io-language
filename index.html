@@ -3,164 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyGlot Master v13.0 | GenAI Native</title>
+    <title>PolyGlot v14 | Ultimate Tutor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         [v-cloak] { display: none; }
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f0f2f5; }
-        .token-blur { filter: blur(10px); transition: filter 0.5s ease; pointer-events: none; }
-        .token-reveal { filter: blur(0); pointer-events: auto; }
-        .tooltip-card { animation: fadeInUp 0.2s ease-out; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .modal-overlay { background-color: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
+        body { font-family: 'Inter', 'Noto Sans SC', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .token-hover:hover { background-color: rgba(99, 102, 241, 0.2); border-radius: 4px; cursor: pointer; color: #818cf8; }
+        .highlight-grammar { border-bottom: 2px dashed #fbbf24; }
+        .highlight-vocab { border-bottom: 2px solid #34d399; }
+        
+        /* Loading Animation */
+        .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: #6366f1; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="antialiased">
-    <div id="app" v-cloak class="flex flex-col md:flex-row min-h-screen relative">
+<body class="antialiased h-screen overflow-hidden flex">
+
+    <div id="app" v-cloak class="w-full h-full flex">
         
-        <div v-if="!isValidKey" class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
-            <div class="bg-white w-full max-w-md p-8 rounded-[32px] shadow-2xl text-center border-4 border-indigo-50">
-                <div class="w-20 h-20 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-lg shadow-indigo-200">
-                    <i class="fa-solid fa-rocket"></i>
-                </div>
-                <h2 class="text-3xl font-black text-slate-900 mb-2">PolyGlot v13</h2>
-                <p class="text-slate-500 font-medium mb-8">Powered by the new Google GenAI SDK.</p>
-                
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-indigo-300">
-                        <i class="fa-solid fa-key"></i>
-                    </div>
-                    <input v-model="tempKey" type="password" placeholder="Paste AIza... Key Here" 
-                        class="w-full pl-12 pr-6 py-5 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition font-mono text-sm font-bold text-indigo-900 placeholder:text-indigo-300">
-                </div>
-
-                <div v-if="setupError" class="mt-4 p-4 bg-red-50 text-red-500 text-xs font-bold rounded-2xl text-left flex items-start gap-3 border border-red-100">
-                    <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
-                    <span class="break-all">{{ setupError }}</span>
-                </div>
-
-                <button @click="verifyAndSaveKey" :disabled="!tempKey || isVerifying" class="w-full mt-6 py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100">
-                    <span v-if="isVerifying"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Verifying...</span>
-                    <span v-else>Launch System 🚀</span>
+        <div v-if="!isValidKey" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-md border border-slate-700 shadow-2xl text-center">
+                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl text-white"><i class="fa-solid fa-key"></i></div>
+                <h2 class="text-2xl font-bold text-white mb-2">API Login</h2>
+                <p class="text-slate-400 text-sm mb-6">Enter your Google Gemini API Key once. It will be saved locally.</p>
+                <input v-model="tempKey" type="password" placeholder="AIza..." class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none mb-4 font-mono">
+                <button @click="verifyKey" :disabled="!tempKey || isLoading" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition">
+                    <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> Verifying...</span>
+                    <span v-else>Save & Start</span>
                 </button>
             </div>
         </div>
 
-        <aside class="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col sticky top-0 md:h-screen z-40">
-            <div class="p-8">
-                <h1 class="text-2xl font-black text-white flex items-center gap-3">
-                    <i class="fa-solid fa-brain text-indigo-400"></i> PolyGlot
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
+            <div class="p-6">
+                <h1 class="text-xl font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-indigo-500"></i> PolyGlot v14
                 </h1>
-                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-[0.2em] font-black">v13.0 GenAI Native</p>
-                <div v-if="isValidKey" class="mt-4 flex items-center gap-2 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] text-indigo-300">
-                    <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
-                    Gemini 2.5-Flash Active
-                </div>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Personal AI Tutor</p>
             </div>
-            
-            <div class="px-6 mb-8">
-                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-3">Target Language</label>
+
+            <div class="px-4 mb-6">
                 <div class="grid grid-cols-2 gap-2">
-                    <button v-for="lang in languages" :key="lang.name" @click="currentLang = lang.name" :class="['flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all', currentLang === lang.name ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800/50 hover:bg-slate-800']">
-                        <span>{{ lang.flag }}</span><span>{{ lang.name }}</span>
+                    <button v-for="lang in languages" :key="lang.name" @click="currentLang = lang" 
+                        :class="['px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition', currentLang.name === lang.name ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700']">
+                        <span>{{ lang.flag }}</span> {{ lang.name }}
                     </button>
                 </div>
             </div>
 
-            <nav class="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
-                <button v-for="m in menuItems" :key="m.id" @click="activeTab = m.id" :class="['w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold transition-all', activeTab === m.id ? 'bg-white/10 text-white' : 'hover:bg-white/5 hover:text-slate-100']">
-                    <i :class="['fa-solid w-6', m.icon, activeTab === m.id ? 'text-indigo-400' : 'text-slate-500']"></i><span class="text-sm">{{ m.label }}</span>
+            <nav class="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
+                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                    :class="['w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition', activeTab === tab.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800']">
+                    <i :class="['fa-solid w-5', tab.icon]"></i> {{ tab.label }}
                 </button>
             </nav>
 
-            <div class="p-6 border-t border-white/5">
-                <button @click="resetKey" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-400 transition"><i class="fa-solid fa-arrow-right-from-bracket"></i><span class="text-sm font-bold">Change API Key</span></button>
+            <div class="p-4 border-t border-slate-800">
+                <button @click="resetSystem" class="text-xs text-red-400 flex items-center gap-2 hover:text-red-300"><i class="fa-solid fa-power-off"></i> Reset API Key</button>
             </div>
         </aside>
 
-        <main class="flex-1 p-4 md:p-12 overflow-y-auto relative">
-            <div class="max-w-4xl mx-auto">
+        <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-950 relative">
+            
+            <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur">
+                <h2 class="text-lg font-bold text-white capitalize">{{ activeTab.replace('-', ' ') }} Mode</h2>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-mono text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded">Model: Gemini 2.0 Flash</span>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
                 
-                <div v-if="activeTab === 'news'" class="space-y-8 animate-in fade-in">
-                    <header class="flex justify-between items-end">
-                        <div><h2 class="text-4xl font-black text-slate-900">Daily News</h2><p class="text-slate-500 font-medium">Content Generation</p></div>
-                        <div class="flex bg-slate-200 p-1 rounded-2xl"><button v-for="l in ['A2','B1','B2','C1']" :key="l" @click="newsLevel = l" :class="['px-4 py-2 rounded-xl text-xs font-black transition', newsLevel === l ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500']">{{ l }}</button></div>
-                    </header>
-                    
-                    <div v-if="newsStep === 'setup'" class="bg-white p-12 rounded-[48px] shadow-xl text-center space-y-8">
-                        <div class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[32px] flex items-center justify-center mx-auto text-4xl"><i class="fa-solid fa-newspaper"></i></div>
-                        <h3 class="text-2xl font-black">Curate Topics</h3>
-                        <button @click="generateTopics" :disabled="isLoading" class="px-12 py-5 bg-indigo-600 text-white rounded-[24px] font-black shadow-xl hover:scale-105 transition disabled:opacity-50">
-                            <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating...</span>
-                            <span v-else>Start Session</span>
-                        </button>
-                        <div v-if="newsTopics.length" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8 text-left">
-                            <button v-for="t in newsTopics" @click="generateArticle(t)" class="p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition group">
-                                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">{{ t.category }}</span>
-                                <h4 class="font-bold text-slate-800 group-hover:text-indigo-900">{{ t.title }}</h4>
+                <div v-if="activeTab === 'news'" class="max-w-4xl mx-auto space-y-8">
+                    <div v-if="!contentData" class="bg-slate-900 p-10 rounded-3xl border border-slate-800 text-center">
+                        <i class="fa-solid fa-book-open text-5xl text-indigo-500 mb-6"></i>
+                        <h3 class="text-2xl font-bold text-white mb-2">Generate Learning Material</h3>
+                        <p class="text-slate-400 mb-8">Choose a topic or let AI decide.</p>
+                        <div class="flex gap-4 justify-center">
+                            <input v-model="topicInput" type="text" placeholder="e.g., Technology, Culture..." class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 w-64">
+                            <button @click="generateContent('news')" :disabled="isLoading" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold transition flex items-center gap-2">
+                                <i v-if="isLoading" class="fa-solid fa-spinner fa-spin"></i>
+                                <span v-else>Generate</span>
                             </button>
                         </div>
                     </div>
 
-                    <div v-if="newsStep === 'article'" class="space-y-6">
-                        <div class="bg-white p-10 rounded-[48px] shadow-xl border border-slate-100">
-                            <div class="flex justify-between items-center mb-8">
-                                <span class="px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase">{{ newsArticle.category }}</span>
-                                <button @click="newsStep = 'setup'" class="text-slate-400 hover:text-slate-900"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                            </div>
-                            <h3 class="text-3xl font-black text-slate-900 mb-8">{{ newsArticle.title }}</h3>
-                            
-                            <div class="bg-slate-50 rounded-[32px] p-10 leading-loose text-lg font-medium text-slate-700 relative">
-                                <div :class="newsRevealed ? 'token-reveal' : 'token-blur'">
-                                    <template v-for="word in newsArticle.content.split(' ')">
-                                        <span @click="handleTokenClick($event, word)" class="cursor-pointer hover:text-indigo-600 hover:underline">{{ word }} </span>
-                                    </template>
-                                </div>
-                                <div v-if="!newsRevealed" class="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
-                                    <button @click="speak(newsArticle.content)" class="w-20 h-20 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl shadow-xl hover:scale-110 transition"><i class="fa-solid fa-play"></i></button>
-                                    <button @click="newsRevealed = true" class="px-6 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-full text-xs font-bold shadow-sm">Reveal Text</button>
+                    <div v-if="contentData" class="animate-in fade-in slide-in-from-bottom-4">
+                        <div class="flex justify-between mb-4">
+                            <button @click="contentData = null" class="text-slate-400 hover:text-white"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                            <button @click="speak(contentData.main_text)" class="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm hover:bg-indigo-500"><i class="fa-solid fa-volume-high mr-1"></i> Read Aloud</button>
+                        </div>
+
+                        <div class="bg-white text-slate-900 p-8 rounded-3xl shadow-xl mb-6">
+                            <h2 class="text-3xl font-black mb-6">{{ contentData.title }}</h2>
+                            <p class="text-xl leading-loose font-medium select-text">
+                                <span v-for="(word, i) in contentData.main_text.split(' ')" :key="i" 
+                                    @click="lookupWord(word)" 
+                                    class="token-hover">{{ word }} </span>
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                <h4 class="text-xs font-bold text-indigo-400 uppercase mb-4 tracking-widest">Full Translation</h4>
+                                <div class="space-y-4">
+                                    <p class="text-slate-300 text-sm"><strong class="text-white">EN:</strong> {{ contentData.translation_en }}</p>
+                                    <p class="text-slate-300 text-sm"><strong class="text-white">CN:</strong> {{ contentData.translation_cn }}</p>
                                 </div>
                             </div>
 
-                            <div v-if="newsRevealed" class="bg-indigo-50 p-8 rounded-[32px] flex gap-6">
-                                <div class="flex-1 space-y-2">
-                                    <h4 class="text-[10px] font-black text-indigo-400 uppercase">Summary</h4>
-                                    <p class="text-sm font-medium text-slate-700 whitespace-pre-wrap">{{ newsArticle.bilingual_summary }}</p>
+                            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 h-96 overflow-y-auto custom-scrollbar">
+                                <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4 tracking-widest">Vocabulary List</h4>
+                                <div class="space-y-3">
+                                    <div v-for="v in contentData.vocabulary" :key="v.word" class="flex justify-between items-start p-3 bg-slate-800 rounded-xl group">
+                                        <div>
+                                            <p class="text-white font-bold text-lg">{{ v.word }}</p>
+                                            <p class="text-xs text-slate-400">{{ v.meaning_en }} | {{ v.meaning_cn }}</p>
+                                        </div>
+                                        <button @click="addToNotebook(v)" class="text-slate-500 hover:text-emerald-400"><i class="fa-solid fa-plus-circle"></i></button>
+                                    </div>
                                 </div>
-                                <button @click="speak(newsArticle.content)" class="w-12 h-12 bg-white text-indigo-600 rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition"><i class="fa-solid fa-volume-high"></i></button>
+                            </div>
+
+                            <div class="md:col-span-2 bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                <h4 class="text-xs font-bold text-amber-400 uppercase mb-4 tracking-widest">Grammar Analysis</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div v-for="g in contentData.grammar" :key="g.point" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                                        <p class="text-amber-400 font-bold mb-1">{{ g.point }}</p>
+                                        <p class="text-slate-300 text-sm">{{ g.explanation }}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="activeTab === 'grammar'" class="space-y-8 animate-in fade-in"><header><h2 class="text-4xl font-black text-slate-900">Grammar Studio</h2></header><div class="relative"><input v-model="grammarInput" @keyup.enter="analyzeGrammar" type="text" placeholder="Explain grammar..." class="w-full pl-8 pr-44 py-6 bg-white rounded-[32px] shadow-sm outline-none focus:ring-8 focus:ring-indigo-500/5 transition text-xl"><button @click="analyzeGrammar" :disabled="isLoading" class="absolute right-3 top-3 bottom-3 px-10 bg-indigo-600 text-white rounded-[24px] font-bold shadow-lg hover:bg-indigo-700">Analyze</button></div><div v-if="grammarResult" class="bg-white p-10 rounded-[48px] shadow-xl"><h3 class="text-2xl font-black text-slate-900 mb-6">{{ grammarResult.grammar_point.rule }}</h3><div class="bg-slate-50 p-6 rounded-3xl space-y-4"><div v-for="ex in grammarResult.grammar_point.examples" class="flex gap-4"><button @click="speak(ex)" class="text-slate-300 hover:text-indigo-500"><i class="fa-solid fa-volume-high"></i></button><p class="font-bold text-slate-700 italic">"{{ ex }}"</p></div></div></div></div>
-                <div v-if="activeTab === 'scenario'" class="h-[calc(100vh-8rem)] flex flex-col animate-in fade-in"><header><h2 class="text-4xl font-black text-slate-900">Scenario Dojo</h2></header><div v-if="!activeScenario" class="grid grid-cols-1 md:grid-cols-3 gap-4"><button v-for="s in scenarios" @click="startScenario(s)" class="bg-white p-8 rounded-[40px] border hover:shadow-xl transition text-left"><div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6"><i :class="['fa-solid', s.icon, 'text-2xl']"></i></div><h3 class="text-xl font-black text-slate-800">{{ s.title }}</h3></button></div><div v-else class="flex-1 flex flex-col bg-white rounded-[48px] shadow-2xl overflow-hidden relative"><div class="p-8 bg-slate-50/50 border-b flex justify-between"><button @click="activeScenario = null" class="w-10 h-10 rounded-full bg-white shadow-sm"><i class="fa-solid fa-arrow-left"></i></button><h3 class="font-black text-lg">{{ activeScenario.title }}</h3></div><div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar"><div v-for="msg in chatMessages" :class="['flex', msg.role==='user'?'justify-end':'justify-start']"><div :class="['max-w-[85%] p-6 rounded-[32px] shadow-md font-medium', msg.role==='user'?'bg-slate-900 text-white rounded-tr-none':'bg-white border text-slate-800 rounded-tl-none']">{{ msg.content }}</div></div></div><div class="p-8 border-t"><input v-model="chatInput" @keyup.enter="handleChatSubmit" type="text" placeholder="Type here..." class="w-full px-8 py-5 bg-slate-100 rounded-[32px] outline-none"></div></div></div>
-                <div v-if="activeTab === 'journal'" class="space-y-8 animate-in fade-in"><header><h2 class="text-4xl font-black text-slate-900">Journal</h2></header><textarea v-model="journalInput" rows="5" class="w-full bg-white p-8 rounded-[32px] shadow-xl border-none outline-none focus:ring-8 focus:ring-indigo-500/5 text-xl font-medium" placeholder="Write something..."></textarea><button @click="polishJournal" class="w-full py-6 bg-slate-900 text-white rounded-[32px] font-black text-xl hover:bg-black transition">Polish</button><div v-if="journalResult" class="bg-indigo-600 p-12 rounded-[48px] shadow-2xl text-white"><p class="text-3xl font-black mb-10">{{ journalResult.optimized }}</p><div class="p-8 bg-black/20 rounded-[32px]"><p class="text-lg opacity-90">{{ journalResult.analysis }}</p></div></div></div>
-                <div v-if="activeTab === 'dictionary'" class="space-y-8 animate-in fade-in"><header><h2 class="text-4xl font-black text-slate-900">Dictionary</h2></header><div class="relative"><input v-model="dictQuery" @keyup.enter="handleLookup" type="text" placeholder="Search..." class="w-full pl-8 pr-44 py-6 bg-white rounded-[32px] shadow-sm outline-none text-xl"><button @click="handleLookup" class="absolute right-3 top-3 bottom-3 px-10 bg-indigo-600 text-white rounded-[24px] font-bold hover:bg-indigo-700">Lookup</button></div><div v-if="dictResult" class="bg-white p-12 rounded-[48px] shadow-xl"><h3 class="text-5xl font-black text-slate-900 mb-6">{{ dictResult.term }}</h3><p class="text-2xl text-slate-700 mb-4">{{ dictResult.definition_en }}</p><p class="text-xl text-slate-500">{{ dictResult.definition_cn }}</p></div></div>
-                <div v-if="activeTab === 'history'" class="space-y-8 animate-in fade-in"><header class="flex justify-between"><div><h2 class="text-4xl font-black text-slate-900">History</h2></div><button @click="exportHistory" class="text-xs font-black text-indigo-600 bg-indigo-50 px-4 py-2 rounded-full">Export</button></header><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div v-for="(v, i) in history.vocab" class="bg-white p-6 rounded-[32px] border shadow-sm relative group"><button @click="deleteVocab(i)" class="absolute top-4 right-4 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button><h4 class="text-xl font-black mb-2">{{ v.word }}</h4><p class="text-xs text-slate-500">{{ v.def_en }}</p></div></div></div>
-                
-                <div v-if="activeTab === 'scanner'" class="space-y-8 animate-in fade-in">
-                    <header><h2 class="text-4xl font-black text-slate-900">Magic Scanner</h2></header>
-                    <div class="bg-white p-12 rounded-[48px] shadow-xl text-center space-y-8">
-                        <div v-if="!scannerPreview" @click="$refs.fileInput.click()" class="border-4 border-dashed border-slate-100 rounded-[40px] p-20 cursor-pointer hover:bg-indigo-50 transition"><i class="fa-solid fa-cloud-arrow-up text-6xl text-slate-200 mb-6"></i><h3 class="text-xl font-black text-slate-400">Upload Image</h3><input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleScanUpload"></div>
-                        <div v-else class="space-y-8"><img :src="scannerPreview" class="max-h-[300px] rounded-3xl shadow-xl border-4 border-white mx-auto"><button @click="processScan" :disabled="isLoading" class="w-full py-6 bg-slate-900 text-white rounded-[32px] font-black text-xl hover:bg-black transition"><span v-if="isLoading">Processing...</span><span v-else>Analyze Text</span></button></div>
+                <div v-if="activeTab === 'import'" class="max-w-3xl mx-auto">
+                    <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800">
+                        <h3 class="text-2xl font-bold text-white mb-4">Import Content</h3>
+                        <p class="text-slate-400 text-sm mb-6">Paste any text (from your PDFs) or JSON here. AI will analyze it.</p>
+                        <textarea v-model="importText" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono text-sm focus:border-indigo-500 outline-none mb-4" placeholder="Paste Japanese/Target Language text here..."></textarea>
+                        <button @click="processImport" :disabled="!importText || isLoading" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Analyze & Import
+                        </button>
                     </div>
-                    <div v-if="scannerResult" class="grid grid-cols-1 md:grid-cols-2 gap-8"><div class="bg-white p-10 rounded-[40px] shadow-lg"><h4 class="text-[10px] font-black text-slate-400 uppercase mb-6">Content</h4><div class="text-xl font-medium text-slate-800 whitespace-pre-wrap">{{ scannerResult.content }}</div></div><div class="bg-indigo-600 p-10 rounded-[40px] shadow-xl text-white"><h4 class="text-[10px] font-black text-white/60 uppercase mb-8">Key Words</h4><div class="space-y-4"><div v-for="w in scannerResult.extracted_words" class="p-6 bg-white/10 rounded-3xl flex justify-between items-start"><div><h5 class="text-xl font-black">{{ w.word }}</h5><p class="text-xs font-bold text-indigo-200 mt-1">{{ w.def_en }} | {{ w.def_cn }}</p></div><button @click="saveVocab(w)" class="w-10 h-10 bg-white/20 rounded-full hover:bg-white text-indigo-600"><i class="fa-solid fa-plus"></i></button></div></div></div></div>
+                </div>
+
+                <div v-if="activeTab === 'notebook'" class="max-w-5xl mx-auto">
+                    <div class="flex justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-white">Knowledge Bank</h3>
+                        <div class="flex gap-2">
+                            <button @click="exportData" class="px-4 py-2 bg-slate-800 text-indigo-400 rounded-lg text-xs font-bold hover:bg-slate-700">Export JSON</button>
+                            <button @click="clearNotebook" class="px-4 py-2 bg-slate-800 text-red-400 rounded-lg text-xs font-bold hover:bg-slate-700">Clear All</button>
+                        </div>
+                    </div>
+                    
+                    <div v-if="notebook.length === 0" class="text-center py-20 text-slate-600">
+                        <i class="fa-solid fa-book text-6xl mb-4"></i>
+                        <p>Notebook is empty. Add words from News or Dictionary.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div v-for="(item, idx) in notebook" :key="idx" class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-indigo-500 transition group relative">
+                            <button @click="notebook.splice(idx, 1); saveNotebook()" class="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h4 class="text-xl font-bold text-white">{{ item.word }}</h4>
+                                <button @click="speak(item.word)" class="text-indigo-500 hover:text-white"><i class="fa-solid fa-volume-high text-xs"></i></button>
+                            </div>
+                            <p class="text-sm text-slate-400 line-clamp-2">{{ item.meaning_en }}</p>
+                            <p class="text-sm text-slate-400">{{ item.meaning_cn }}</p>
+                            <span class="absolute bottom-4 right-4 text-[10px] text-slate-600 uppercase">{{ item.lang }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="activeTab === 'scenario'" class="max-w-2xl mx-auto h-full flex flex-col pb-4">
+                    <div class="flex-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 overflow-y-auto custom-scrollbar mb-4 space-y-4">
+                        <div v-if="chatMessages.length === 0" class="text-center py-10">
+                            <p class="text-slate-500 mb-4">Select a scenario to start</p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <button v-for="s in ['Coffee Shop', 'Airport', 'Business Meeting']" @click="startScenario(s)" class="px-4 py-2 bg-slate-800 rounded-full text-sm hover:bg-indigo-600 transition">{{ s }}</button>
+                            </div>
+                        </div>
+                        <div v-for="msg in chatMessages" :key="msg.id" :class="['flex', msg.role === 'user' ? 'justify-end' : 'justify-start']">
+                            <div :class="['max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed', msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700']">
+                                <p>{{ msg.content }}</p>
+                                <p v-if="msg.translation" class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-700">{{ msg.translation }}</p>
+                                <button v-if="msg.role === 'ai'" @click="speak(msg.content)" class="mt-2 text-indigo-400 text-xs"><i class="fa-solid fa-volume-high"></i></button>
+                            </div>
+                        </div>
+                        <div v-if="isLoading" class="flex justify-start"><div class="bg-slate-800 p-4 rounded-2xl rounded-tl-none"><i class="fa-solid fa-ellipsis fa-bounce text-slate-500"></i></div></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <input v-model="chatInput" @keyup.enter="sendChatMessage" type="text" placeholder="Type your response..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500">
+                        <button @click="sendChatMessage" :disabled="!chatInput || isLoading" class="bg-indigo-600 text-white px-6 rounded-xl hover:bg-indigo-500"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
 
             </div>
-        </main>
 
-        <div v-if="tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }" class="fixed z-[100] w-64 bg-slate-900 text-white p-6 rounded-[32px] shadow-2xl tooltip-card" @click.stop>
-            <div class="flex justify-between mb-4"><h5 class="text-xl font-black">{{ tooltip.word }}</h5><button @click="tooltip = null" class="text-slate-500"><i class="fa-solid fa-times"></i></button></div>
-            <div v-if="tooltip.loading" class="flex justify-center py-4"><i class="fa-solid fa-spinner fa-spin text-indigo-400"></i></div>
-            <div v-else class="space-y-4"><p class="text-xs font-bold text-slate-300">{{ tooltip.def_en }}</p><p class="text-xs font-bold text-indigo-400">{{ tooltip.def_cn }}</p><button @click="saveVocab(tooltip)" class="w-full py-3 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase hover:bg-indigo-400 hover:text-white transition">Add</button></div>
-        </div>
+            <div v-if="dictPopup" class="absolute bottom-8 right-8 w-80 bg-slate-800 border border-indigo-500/50 rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-10 z-50">
+                <div class="flex justify-between items-start mb-4">
+                    <h4 class="text-2xl font-bold text-white">{{ dictPopup.word }}</h4>
+                    <button @click="dictPopup = null" class="text-slate-500 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div v-if="dictPopup.loading" class="text-center py-4"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500"></i></div>
+                <div v-else class="space-y-3">
+                    <div class="text-sm text-slate-300"><span class="text-indigo-400 font-bold">EN:</span> {{ dictPopup.meaning_en }}</div>
+                    <div class="text-sm text-slate-300"><span class="text-emerald-400 font-bold">CN:</span> {{ dictPopup.meaning_cn }}</div>
+                    <div class="text-xs text-slate-500 italic mt-2">{{ dictPopup.pos }}</div>
+                    <div class="flex gap-2 mt-4">
+                        <button @click="speak(dictPopup.word)" class="flex-1 py-2 bg-slate-700 rounded-lg text-xs font-bold hover:bg-slate-600">Listen</button>
+                        <button @click="addToNotebook(dictPopup)" class="flex-1 py-2 bg-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-500">Save</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
     </div>
 
     <script type="importmap">
@@ -171,214 +235,214 @@
       }
     }
     </script>
-    
-    <script type="module">
-        import { createApp, ref, onMounted } from 'vue';
-        import { GoogleGenAI } from "@google/genai";
 
-        // === CONFIG ===
-        const MODEL_NAME = "gemini-2.5-flash"; 
+    <script type="module">
+        import { createApp, ref, onMounted, watch } from 'vue';
+        import { GoogleGenAI } from "@google/genai";
 
         createApp({
             setup() {
-                const activeTab = ref('news');
-                const currentLang = ref('Japanese');
-                const isLoading = ref(false);
-                const isVerifying = ref(false);
+                // --- STATE ---
+                const MODEL_NAME = "gemini-2.0-flash"; // Using 2.0 Flash as standard
                 const isValidKey = ref(false);
                 const tempKey = ref('');
-                const setupError = ref('');
-                const tooltip = ref(null);
+                const apiKey = ref(localStorage.getItem('pg_key') || '');
+                const isLoading = ref(false);
                 
-                const settings = ref({ apiKey: localStorage.getItem('pm_v13_key') || '' });
-                const history = ref({ vocab: JSON.parse(localStorage.getItem('pm_v13_vocab')) || [] });
-
-                // States
-                const newsLevel = ref('B1');
-                const newsStep = ref('setup');
-                const newsTopics = ref([]);
-                const newsArticle = ref(null);
-                const newsRevealed = ref(false);
-                const scannerPreview = ref(null);
-                const scannerResult = ref(null);
-                const grammarInput = ref('');
-                const grammarResult = ref(null);
-                const activeScenario = ref(null);
+                const activeTab = ref('news');
+                const topicInput = ref('');
+                const importText = ref('');
+                const contentData = ref(null); // Stores the article/analysis
+                const notebook = ref(JSON.parse(localStorage.getItem('pg_notebook')) || []);
                 const chatMessages = ref([]);
                 const chatInput = ref('');
-                const dictQuery = ref('');
-                const dictResult = ref(null);
-                const journalInput = ref('');
-                const journalResult = ref(null);
+                const dictPopup = ref(null);
 
-                const languages = [{ name: 'Japanese', flag: '🇯🇵' }, { name: 'Finnish', flag: '🇫🇮' }, { name: 'German', flag: '🇩🇪' }, { name: 'Korean', flag: '🇰🇷' }, { name: 'English', flag: '🇺🇸' }, { name: 'French', flag: '🇫🇷' }];
-                const menuItems = [{ id: 'news', label: 'Daily News', icon: 'fa-clapperboard' }, { id: 'scanner', label: 'Magic Scanner', icon: 'fa-wand-magic-sparkles' }, { id: 'grammar', label: 'Grammar Studio', icon: 'fa-microchip' }, { id: 'scenario', label: 'Scenario Dojo', icon: 'fa-mask' }, { id: 'journal', label: 'Journal Polish', icon: 'fa-pen-nib' }, { id: 'dictionary', label: 'Context Lookup', icon: 'fa-magnifying-glass' }, { id: 'history', label: 'Knowledge Bank', icon: 'fa-database' }];
-                const scenarios = [{ id: 'coffee', title: 'Coffee Shop', icon: 'fa-mug-hot' }, { id: 'interview', title: 'Job Interview', icon: 'fa-briefcase' }, { id: 'travel', title: 'Airport', icon: 'fa-plane' }];
+                const currentLang = ref({ name: 'Japanese', code: 'ja-JP', flag: '🇯🇵' });
+                const languages = [
+                    { name: 'Japanese', code: 'ja-JP', flag: '🇯🇵' },
+                    { name: 'English', code: 'en-US', flag: '🇺🇸' },
+                    { name: 'German', code: 'de-DE', flag: '🇩🇪' },
+                    { name: 'French', code: 'fr-FR', flag: '🇫🇷' },
+                    { name: 'Korean', code: 'ko-KR', flag: '🇰🇷' }
+                ];
+                
+                const tabs = [
+                    { id: 'news', label: 'Smart Reading', icon: 'fa-book-open' },
+                    { id: 'import', label: 'Import Content', icon: 'fa-file-import' },
+                    { id: 'scenario', label: 'Scenario Dojo', icon: 'fa-comments' },
+                    { id: 'notebook', label: 'Notebook', icon: 'fa-book-bookmark' }
+                ];
 
-                // === NEW SDK LOGIC ===
-                const verifyAndSaveKey = async () => {
-                    isVerifying.value = true;
-                    setupError.value = '';
-                    try {
-                        const ai = new GoogleGenAI({ apiKey: tempKey.value });
-                        // Try new SDK call syntax
-                        await ai.models.generateContent({ model: MODEL_NAME, contents: "Hello" });
-                        
-                        settings.value.apiKey = tempKey.value;
-                        localStorage.setItem('pm_v13_key', tempKey.value);
-                        isValidKey.value = true;
-                    } catch(e) {
-                        setupError.value = "Connect Error: " + e.message;
-                    } finally { isVerifying.value = false; }
-                };
-
-                const callGemini = async (prompt, imageBase64 = null, schema = null) => {
+                // --- KEY MANAGEMENT ---
+                const verifyKey = async () => {
+                    if(!tempKey.value) return;
                     isLoading.value = true;
                     try {
-                        const ai = new GoogleGenAI({ apiKey: settings.value.apiKey });
-                        
-                        // NEW SDK: contents structure
-                        let contentData;
-                        if(imageBase64) {
-                            contentData = [
-                                { text: prompt },
-                                { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }
-                            ];
-                        } else {
-                            contentData = prompt; // Simple string works in new SDK
-                        }
+                        const ai = new GoogleGenAI({ apiKey: tempKey.value });
+                        await ai.models.generateContent({ model: MODEL_NAME, contents: "Hi" });
+                        apiKey.value = tempKey.value;
+                        localStorage.setItem('pg_key', tempKey.value);
+                        isValidKey.value = true;
+                    } catch(e) {
+                        alert("Invalid Key: " + e.message);
+                    } finally { isLoading.value = false; }
+                };
 
-                        // NEW SDK: config structure
-                        const config = schema ? { 
-                            responseMimeType: "application/json", 
-                            responseSchema: schema 
-                        } : {};
+                const resetSystem = () => {
+                    if(confirm("Clear API Key and reset?")) {
+                        localStorage.removeItem('pg_key');
+                        location.reload();
+                    }
+                };
 
-                        const response = await ai.models.generateContent({
-                            model: MODEL_NAME,
-                            contents: contentData,
-                            config: config
-                        });
+                if(apiKey.value) isValidKey.value = true;
 
-                        // NEW SDK: Accessing text (Property, not function!)
-                        const text = response.text; // <--- FIXED HERE
-                        
+                // --- AI CORE ---
+                const callAI = async (prompt, schema = null) => {
+                    if(!apiKey.value) return null;
+                    isLoading.value = true;
+                    try {
+                        const ai = new GoogleGenAI({ apiKey: apiKey.value });
+                        const config = schema ? { responseMimeType: "application/json", responseSchema: schema } : {};
+                        const res = await ai.models.generateContent({ model: MODEL_NAME, contents: prompt, config });
+                        const text = res.text;
                         return schema ? JSON.parse(text) : text;
-
                     } catch(e) {
                         alert("AI Error: " + e.message);
-                        if(e.message.includes('400') || e.message.includes('403')) {
-                            localStorage.removeItem('pm_v13_key');
-                            location.reload();
-                        }
                         return null;
                     } finally { isLoading.value = false; }
                 };
 
-                const resetKey = () => { localStorage.removeItem('pm_v13_key'); location.reload(); };
+                // --- FEATURES ---
 
-                // --- Feature Functions ---
-                const generateTopics = async () => {
-                    const schema = { type: "ARRAY", items: { type: "OBJECT", properties: { title: { type: "STRING" }, category: { type: "STRING" } } } };
-                    const res = await callGemini(`Generate 3 news topics for ${currentLang.value} (${newsLevel.value}).`, null, schema);
-                    if (res) newsTopics.value = res;
+                // 1. Generate News / Reading Content
+                const generateContent = async (source) => {
+                    const prompt = source === 'news' 
+                        ? `Generate a B1/B2 level article in ${currentLang.value.name} about "${topicInput.value || 'Current Trends'}". Return JSON.` 
+                        : `Analyze this text in ${currentLang.value.name}: "${importText.value}". Return JSON.`;
+
+                    // Strict JSON Schema for consistent UI
+                    const schema = {
+                        type: "OBJECT",
+                        properties: {
+                            title: { type: "STRING" },
+                            main_text: { type: "STRING" },
+                            translation_en: { type: "STRING" },
+                            translation_cn: { type: "STRING" },
+                            vocabulary: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        word: { type: "STRING" },
+                                        meaning_en: { type: "STRING" },
+                                        meaning_cn: { type: "STRING" }
+                                    }
+                                }
+                            },
+                            grammar: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        point: { type: "STRING" },
+                                        explanation: { type: "STRING" }
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    const data = await callAI(prompt, schema);
+                    if(data) {
+                        contentData.value = data;
+                        if(source === 'import') activeTab.value = 'news'; // Redirect import to view
+                        topicInput.value = '';
+                        importText.value = '';
+                    }
                 };
 
-                const generateArticle = async (topic) => {
-                    const schema = { type: "OBJECT", properties: { title: { type: "STRING" }, category: { type: "STRING" }, content: { type: "STRING" }, bilingual_summary: { type: "STRING" } } };
-                    const res = await callGemini(`Write a news article about "${topic.title}" in ${currentLang.value} (${newsLevel.value}). Include content and bilingual summary.`, null, schema);
-                    if (res) { newsArticle.value = res; newsStep.value = 'article'; newsRevealed.value = false; }
+                const processImport = () => generateContent('import');
+
+                // 2. Dictionary / Lookup
+                const lookupWord = async (word) => {
+                    word = word.replace(/[.,!?]/g, '');
+                    dictPopup.value = { word, loading: true };
+                    
+                    const schema = {
+                        type: "OBJECT",
+                        properties: {
+                            word: { type: "STRING" },
+                            pos: { type: "STRING" },
+                            meaning_en: { type: "STRING" },
+                            meaning_cn: { type: "STRING" }
+                        }
+                    };
+                    
+                    const data = await callAI(`Define "${word}" in ${currentLang.value.name} with EN and CN meanings.`, schema);
+                    if(data) {
+                        dictPopup.value = { ...data, loading: false };
+                    }
                 };
 
-                const handleTokenClick = async (event, word) => {
-                    const rawWord = word.replace(/[.,!?;:()"]/g, '');
-                    tooltip.value = { x: event.clientX, y: event.clientY, word: rawWord, loading: true };
-                    const schema = { type: "OBJECT", properties: { word: { type: "STRING" }, pos: { type: "STRING" }, def_en: { type: "STRING" }, def_cn: { type: "STRING" } } };
-                    const res = await callGemini(`Define "${rawWord}" in ${currentLang.value} (EN/CN).`, null, schema);
-                    if (res) tooltip.value = { ...tooltip.value, ...res, loading: false };
+                // 3. Scenario Dojo
+                const startScenario = async (topic) => {
+                    chatMessages.value = [];
+                    const schema = { type: "OBJECT", properties: { message: { type: "STRING" }, translation: { type: "STRING" } } };
+                    const data = await callAI(`Start a roleplay in ${currentLang.value.name} about "${topic}". I am the student. Return JSON with message and translation_cn.`, schema);
+                    if(data) {
+                        chatMessages.value.push({ id: Date.now(), role: 'ai', content: data.message, translation: data.translation });
+                        speak(data.message);
+                    }
                 };
 
-                const processScan = async () => {
-                    if (!scannerPreview.value) return;
-                    const base64Data = scannerPreview.value.split(',')[1];
-                    const schema = { type: "OBJECT", properties: { content: { type: "STRING" }, extracted_words: { type: "ARRAY", items: { type: "OBJECT", properties: { word: { type: "STRING" }, def_en: { type: "STRING" }, def_cn: { type: "STRING" } } } } } };
-                    const res = await callGemini("Extract text and key vocabulary (EN/CN).", base64Data, schema);
-                    if (res) scannerResult.value = res;
+                const sendChatMessage = async () => {
+                    if(!chatInput.value) return;
+                    const msg = chatInput.value;
+                    chatMessages.value.push({ id: Date.now(), role: 'user', content: msg });
+                    chatInput.value = '';
+                    
+                    const history = chatMessages.value.map(m => `${m.role}: ${m.content}`).join('\n');
+                    const schema = { type: "OBJECT", properties: { message: { type: "STRING" }, translation: { type: "STRING" } } };
+                    const data = await callAI(`History:\n${history}\n\nReply in ${currentLang.value.name} naturally. JSON with CN translation.`, schema);
+                    
+                    if(data) {
+                        chatMessages.value.push({ id: Date.now()+1, role: 'ai', content: data.message, translation: data.translation });
+                        speak(data.message);
+                    }
                 };
 
-                const analyzeGrammar = async () => {
-                    const schema = { type: "OBJECT", properties: { grammar_point: { type: "OBJECT", properties: { rule: { type: "STRING" }, examples: { type: "ARRAY", items: { type: "STRING" } }, quiz: { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answer: { type: "INTEGER" } } } } }, comparison: { type: "STRING" } } };
-                    const res = await callGemini(`Explain grammar "${grammarInput.value}" for ${currentLang.value}.`, null, schema);
-                    if (res) grammarResult.value = res;
-                };
-
-                const startScenario = async (s) => {
-                    activeScenario.value = s; chatMessages.value = [];
-                    const res = await callGemini(`Start ${currentLang.value} roleplay: "${s.title}". JSON: {message: string}`, null, { type: "OBJECT", properties: { message: { type: "STRING" } } });
-                    chatMessages.value.push({ role: 'assistant', content: res.message });
-                    speak(res.message);
-                };
-
-                const handleChatSubmit = async () => {
-                    const msg = chatInput.value; chatInput.value = '';
-                    chatMessages.value.push({ role: 'user', content: msg });
-                    const historyText = chatMessages.value.map(m => `${m.role}: ${m.content}`).join('\n');
-                    const res = await callGemini(`History:\n${historyText}\n\nReply in ${currentLang.value}. JSON: {message: string}`, null, { type: "OBJECT", properties: { message: { type: "STRING" } } });
-                    chatMessages.value.push({ role: 'assistant', content: res.message });
-                    speak(res.message);
-                };
-
-                const polishJournal = async () => {
-                    const schema = { type: "OBJECT", properties: { optimized: { type: "STRING" }, analysis: { type: "STRING" } } };
-                    const res = await callGemini(`Polish "${journalInput.value}" to native ${currentLang.value}.`, null, schema);
-                    if (res) journalResult.value = res;
-                };
-
-                const handleLookup = async () => {
-                    const schema = { type: "OBJECT", properties: { term: { type: "STRING" }, pos: { type: "STRING" }, definition_en: { type: "STRING" }, definition_cn: { type: "STRING" }, related_grammar: { type: "STRING" }, example: { type: "STRING" } } };
-                    const res = await callGemini(`Define "${dictQuery.value}" in ${currentLang.value} (EN/CN).`, null, schema);
-                    if (res) dictResult.value = res;
-                };
-
-                const handleScanUpload = (e) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => scannerPreview.value = ev.target.result;
-                    reader.readAsDataURL(e.target.files[0]);
-                };
+                // 4. Utils (TTS, Notebook)
                 const speak = (text) => {
                     window.speechSynthesis.cancel();
                     const ut = new SpeechSynthesisUtterance(text);
-                    const l = languages.find(lang => lang.name === currentLang.value);
-                    if(l && l.name === 'English') ut.lang = 'en-US';
+                    ut.lang = currentLang.value.code; // FIXED: Uses correct BCP-47 tag
                     window.speechSynthesis.speak(ut);
                 };
-                const saveVocab = (item) => {
-                    history.value.vocab.unshift({ ...item, lang: currentLang.value });
-                    localStorage.setItem('pm_v13_vocab', JSON.stringify(history.value.vocab));
-                };
-                const deleteVocab = (i) => {
-                    history.value.vocab.splice(i, 1);
-                    localStorage.setItem('pm_v13_vocab', JSON.stringify(history.value.vocab));
-                };
-                const exportHistory = () => {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(new Blob([JSON.stringify(history.value)], {type:'application/json'}));
-                    a.download = 'polyglot_v13.json'; a.click();
+
+                const addToNotebook = (item) => {
+                    if(notebook.value.some(x => x.word === item.word)) return alert("Already saved!");
+                    notebook.value.unshift({ ...item, lang: currentLang.value.name });
+                    saveNotebook();
                 };
 
-                onMounted(() => {
-                    if(settings.value.apiKey) verifyAndSaveKey();
-                    window.addEventListener('click', () => tooltip.value = null);
-                });
+                const saveNotebook = () => localStorage.setItem('pg_notebook', JSON.stringify(notebook.value));
+                const clearNotebook = () => { notebook.value = []; saveNotebook(); };
+                const exportData = () => {
+                    const blob = new Blob([JSON.stringify(notebook.value, null, 2)], {type:'application/json'});
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'polyglot_notes.json';
+                    a.click();
+                };
 
                 return {
-                    isValidKey, tempKey, setupError, isVerifying, verifyAndSaveKey, resetKey,
-                    activeTab, currentLang, isLoading, settings, history,
-                    languages, menuItems, scenarios, newsLevel, newsStep, newsTopics, newsArticle, newsRevealed,
-                    scannerPreview, scannerResult, grammarInput, grammarResult, activeScenario, chatMessages, chatInput,
-                    dictQuery, dictResult, journalInput, journalResult,
-                    generateTopics, generateArticle, handleTokenClick, handleScanUpload, processScan, analyzeGrammar, 
-                    startScenario, handleChatSubmit, saveVocab, deleteVocab, exportHistory, speak, handleLookup, polishJournal
+                    isValidKey, tempKey, apiKey, isLoading, verifyKey, resetSystem,
+                    activeTab, tabs, currentLang, languages,
+                    topicInput, importText, contentData, notebook, chatMessages, chatInput, dictPopup,
+                    generateContent, processImport, lookupWord, addToNotebook, speak,
+                    startScenario, sendChatMessage, clearNotebook, exportData, saveNotebook
                 };
             }
         }).mount('#app');
