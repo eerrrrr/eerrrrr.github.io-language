@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyGlot Master v11.2 | Stable Fix</title>
+    <title>PolyGlot Master v11.8 | UI Config</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -19,17 +19,46 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .recording-pulse { animation: pulse-red 1.5s infinite; }
         @keyframes pulse-red { 0%, 100% { background: #ef4444; } 50% { background: #b91c1c; transform: scale(1.05); } }
+        
+        /* Modal Overlay */
+        .modal-overlay { background-color: rgba(0,0,0,0.75); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="antialiased">
-    <div id="app" v-cloak class="flex flex-col md:flex-row min-h-screen">
+    <div id="app" v-cloak class="flex flex-col md:flex-row min-h-screen relative">
+        
+        <div v-if="!isValidKey" class="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md p-8 rounded-[32px] shadow-2xl text-center">
+                <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to PolyGlot</h2>
+                <p class="text-slate-500 text-sm mb-6">Please paste your Google Gemini API Key to activate the AI Tutor.</p>
+                
+                <input v-model="tempKey" type="password" placeholder="Paste AIza... key here" class="w-full px-6 py-4 bg-slate-50 border-2 border-indigo-100 rounded-2xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition mb-4 text-center font-mono text-sm">
+                
+                <div v-if="setupError" class="mb-4 text-red-500 text-xs font-bold bg-red-50 p-3 rounded-xl">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ setupError }}
+                </div>
+
+                <button @click="verifyAndSaveKey" :disabled="!tempKey || isVerifying" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-black transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    <span v-if="isVerifying"><i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...</span>
+                    <span v-else>Start System <i class="fa-solid fa-arrow-right"></i></span>
+                </button>
+                <p class="mt-6 text-[10px] text-slate-400">Your key is stored locally in your browser.</p>
+            </div>
+        </div>
+
         <aside class="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col sticky top-0 md:h-screen z-40">
             <div class="p-8">
                 <h1 class="text-2xl font-black text-white flex items-center gap-3">
                     <i class="fa-solid fa-brain-circuit text-indigo-400"></i>
-                    PolyGlot v11.2
+                    PolyGlot v11.8
                 </h1>
-                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-[0.2em] font-black">Stable Fix Edition</p>
+                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-[0.2em] font-black">UI-First Edition</p>
+                <div v-if="isValidKey && detectedModel" class="mt-4 px-3 py-1 bg-green-900/30 border border-green-800 rounded text-[10px] text-green-400">
+                    <i class="fa-solid fa-link mr-1"></i> {{ detectedModel }}
+                </div>
             </div>
 
             <div class="px-6 mb-8">
@@ -53,9 +82,9 @@
             </nav>
 
             <div class="p-6 border-t border-white/5">
-                <button @click="activeTab = 'settings'" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-white transition">
-                    <i class="fa-solid fa-gears"></i>
-                    <span class="text-sm font-bold">System Config</span>
+                <button @click="resetKey" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-400 transition">
+                    <i class="fa-solid fa-power-off"></i>
+                    <span class="text-sm font-bold">Reset API Key</span>
                 </button>
             </div>
         </aside>
@@ -264,14 +293,6 @@
                     </div>
                 </div>
 
-                <div v-if="activeTab === 'settings'" class="max-w-xl mx-auto space-y-8 animate-in fade-in duration-500">
-                    <h2 class="text-3xl font-black">Configuration</h2>
-                    <div class="bg-white p-10 rounded-[40px] shadow-xl border border-slate-100 space-y-6">
-                        <div><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Gemini API Key</label><input v-model="settings.apiKey" type="password" placeholder="AI Studio Key..." class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 transition"></div>
-                        <button @click="saveSettings" class="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black shadow-xl hover:bg-indigo-700 transition">Save & Reload</button>
-                        <div class="pt-6 border-t border-slate-50"><button @click="factoryReset" class="w-full py-4 text-red-400 font-bold hover:text-red-600 transition">Factory Reset</button></div>
-                    </div>
-                </div>
             </div>
         </main>
 
@@ -293,7 +314,15 @@
         import { createApp, ref, onMounted } from 'vue';
         import { GoogleGenerativeAI } from "@google/generative-ai";
 
-        const HARDCODED_API_KEY = ""; 
+        // =========================================================
+        // MODELS TO TRY (In Order of Preference)
+        // =========================================================
+        const CANDIDATE_MODELS = [
+            "gemini-1.5-flash-001", // Most stable
+            "gemini-1.5-flash",     // Standard
+            "gemini-1.5-pro",       // High quality
+            "gemini-pro"            // Legacy fallback
+        ];
 
         createApp({
             setup() {
@@ -303,8 +332,19 @@
                 const isRecording = ref(false);
                 const tooltip = ref(null);
                 const quizAnswered = ref(null);
-                const settings = ref({ apiKey: HARDCODED_API_KEY || localStorage.getItem('pm_v11_key') || '' });
+                const detectedModel = ref(null); 
+                
+                // Key Management
+                const savedKey = localStorage.getItem('pm_v11_key');
+                const isValidKey = ref(!!savedKey);
+                const tempKey = ref('');
+                const setupError = ref('');
+                const isVerifying = ref(false);
+
+                const settings = ref({ apiKey: savedKey || '' });
                 const history = ref({ vocab: JSON.parse(localStorage.getItem('pm_v11_vocab')) || [] });
+                
+                // App State
                 const newsLevel = ref('B1');
                 const newsStep = ref('setup');
                 const newsTopics = ref([]);
@@ -321,43 +361,110 @@
                 const dictResult = ref(null);
                 const journalInput = ref('');
                 const journalResult = ref(null);
+                
                 const languages = [{ name: 'Japanese', flag: '🇯🇵', code: 'ja-JP' }, { name: 'Finnish', flag: '🇫🇮', code: 'fi-FI' }, { name: 'German', flag: '🇩🇪', code: 'de-DE' }, { name: 'Korean', flag: '🇰🇷', code: 'ko-KR' }, { name: 'English', flag: '🇺🇸', code: 'en-US' }, { name: 'French', flag: '🇫🇷', code: 'fr-FR' }];
                 const menuItems = [{ id: 'news', label: 'Daily News', icon: 'fa-clapperboard' }, { id: 'scanner', label: 'Magic Scanner', icon: 'fa-wand-magic-sparkles' }, { id: 'grammar', label: 'Grammar Studio', icon: 'fa-microchip' }, { id: 'scenario', label: 'Scenario Dojo', icon: 'fa-mask' }, { id: 'journal', label: 'Journal Polish', icon: 'fa-pen-nib' }, { id: 'dictionary', label: 'Context Lookup', icon: 'fa-magnifying-glass' }, { id: 'history', label: 'Knowledge Bank', icon: 'fa-database' }];
                 const scenarios = [{ id: 'coffee', title: 'Coffee Shop', icon: 'fa-mug-hot' }, { id: 'interview', title: 'Job Interview', icon: 'fa-briefcase' }, { id: 'travel', title: 'Airport', icon: 'fa-plane' }];
 
-                const getAI = () => {
-                    const key = settings.value.apiKey || HARDCODED_API_KEY;
-                    if (!key) { alert("Please configure API Key in Settings."); activeTab.value = 'settings'; return null; }
-                    return new GoogleGenerativeAI(key);
+                // === KEY VERIFICATION & AUTO-DETECT LOGIC ===
+                
+                const verifyAndSaveKey = async () => {
+                    isVerifying.value = true;
+                    setupError.value = '';
+                    
+                    try {
+                        const genAI = new GoogleGenerativeAI(tempKey.value);
+                        // Try to find ANY working model
+                        for (const m of CANDIDATE_MODELS) {
+                            try {
+                                const model = genAI.getGenerativeModel({ model: m });
+                                await model.generateContent("Hi"); // Ping
+                                
+                                // Success!
+                                console.log(`Verified with model: ${m}`);
+                                detectedModel.value = m;
+                                settings.value.apiKey = tempKey.value;
+                                localStorage.setItem('pm_v11_key', tempKey.value);
+                                isValidKey.value = true;
+                                isVerifying.value = false;
+                                return;
+                            } catch(e) {
+                                console.log(`Model ${m} failed during verification: ${e.message}`);
+                            }
+                        }
+                        throw new Error("API Key seems valid but no models (Flash/Pro) are accessible. Check restrictions.");
+                    } catch (e) {
+                        setupError.value = "Invalid Key or No Access: " + (e.message.includes('400') ? "Check for spaces/typos" : e.message);
+                        isVerifying.value = false;
+                    }
+                };
+
+                const resetKey = () => {
+                    localStorage.removeItem('pm_v11_key');
+                    location.reload();
+                };
+
+                const getWorkingModel = async (genAI) => {
+                    if (detectedModel.value) return genAI.getGenerativeModel({ model: detectedModel.value });
+                    
+                    // Runtime auto-detect (if page refreshed but key exists)
+                    for (const m of CANDIDATE_MODELS) {
+                        try {
+                            const model = genAI.getGenerativeModel({ model: m });
+                            await model.generateContent("Hi");
+                            detectedModel.value = m;
+                            return model;
+                        } catch (e) {}
+                    }
+                    alert("System Error: Could not connect to any Gemini Model.");
+                    return null;
                 };
 
                 const callGemini = async (prompt, imageBase64 = null, schema = null) => {
-                    const genAI = getAI();
-                    if (!genAI) return null;
+                    if (!settings.value.apiKey) { isValidKey.value = false; return null; }
+                    
+                    const genAI = new GoogleGenerativeAI(settings.value.apiKey);
                     isLoading.value = true;
+                    
                     try {
-                        // FIXED: Use gemini-1.5-flash-latest to avoid 404
-                        const model = genAI.getGenerativeModel({ 
-                            model: "gemini-1.5-flash-latest",
-                            generationConfig: schema ? { responseMimeType: "application/json", responseSchema: schema } : {}
-                        });
+                        const model = await getWorkingModel(genAI);
+                        if(!model) return null;
+
+                        const config = schema ? { responseMimeType: "application/json", responseSchema: schema } : {};
+                        let finalPrompt = prompt;
+                        
+                        // Fallback for models without native schema support
+                        if (schema && detectedModel.value.includes('pro') && !detectedModel.value.includes('1.5')) {
+                             finalPrompt += " \n\nIMPORTANT: Return strictly valid JSON.";
+                        }
 
                         let result;
                         if (imageBase64) {
-                            result = await model.generateContent([prompt, { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }]);
+                            result = await model.generateContent([finalPrompt, { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }], { generationConfig: config });
                         } else {
-                            result = await model.generateContent(prompt);
+                            result = await model.generateContent(finalPrompt, { generationConfig: config });
                         }
+                        
                         const response = await result.response;
                         const text = response.text();
-                        return schema ? JSON.parse(text) : text;
+                        
+                        if (schema) {
+                            try { return JSON.parse(text); } 
+                            catch (e) { 
+                                const clean = text.replace(/```json/g, '').replace(/```/g, '');
+                                return JSON.parse(clean); 
+                            }
+                        }
+                        return text;
+
                     } catch (err) {
                         alert("API Error: " + err.message);
-                        console.error(err);
+                        if(err.message.includes('400')) resetKey(); // Auto-reset on auth fail
                         return null;
                     } finally { isLoading.value = false; }
                 };
 
+                // Helper Functions
                 const speak = (text) => {
                     if (!window.speechSynthesis) return;
                     window.speechSynthesis.cancel();
@@ -383,7 +490,7 @@
                     rec.start();
                 };
 
-                // Features
+                // Feature Logic
                 const generateTopics = async () => {
                     const schema = { type: "ARRAY", items: { type: "OBJECT", properties: { title: { type: "STRING" }, category: { type: "STRING" } } } };
                     const res = await callGemini(`Generate 3 news topics for ${currentLang.value} (${newsLevel.value}).`, null, schema);
@@ -433,9 +540,9 @@
                 const startScenario = async (s) => {
                     activeScenario.value = s; chatMessages.value = [];
                     const res = await callGemini(`Start ${currentLang.value} roleplay: "${s.title}". JSON: {message: string, translation: string}`);
-                    const data = JSON.parse(res);
-                    chatMessages.value.push({ id: Date.now(), role: 'assistant', content: data.message, translation: data.translation });
-                    speak(data.message);
+                    const data = res; 
+                    chatMessages.value.push({ id: Date.now(), role: 'assistant', content: data.message || "Hello!", translation: data.translation || "你好" });
+                    speak(data.message || "Hello");
                 };
 
                 const handleChatSubmit = async () => {
@@ -443,10 +550,10 @@
                     const msg = chatInput.value; chatInput.value = '';
                     chatMessages.value.push({ id: Date.now(), role: 'user', content: msg });
                     const historyText = chatMessages.value.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
-                    const res = await callGemini(`Context:\n${historyText}\n\nContinue roleplay in ${currentLang.value}. JSON: {message: string, translation: string}`);
-                    const data = JSON.parse(res);
-                    chatMessages.value.push({ id: Date.now()+1, role: 'assistant', content: data.message, translation: data.translation });
-                    speak(data.message);
+                    const schema = { type: "OBJECT", properties: { message: { type: "STRING" }, translation: { type: "STRING" } } };
+                    const res = await callGemini(`Context:\n${historyText}\n\nContinue roleplay in ${currentLang.value}.`, null, schema);
+                    chatMessages.value.push({ id: Date.now()+1, role: 'assistant', content: res.message, translation: res.translation });
+                    speak(res.message);
                 };
 
                 const polishJournal = async () => {
@@ -469,8 +576,7 @@
                     localStorage.setItem('pm_v11_vocab', JSON.stringify(history.value.vocab));
                 };
                 const deleteVocab = (idx) => { history.value.vocab.splice(idx, 1); localStorage.setItem('pm_v11_vocab', JSON.stringify(history.value.vocab)); };
-                const saveSettings = () => { localStorage.setItem('pm_v11_key', settings.value.apiKey); location.reload(); };
-                const factoryReset = () => { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } };
+                
                 const exportHistory = () => {
                     const blob = new Blob([JSON.stringify(history.value, null, 2)], { type: 'application/json' });
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'polyglot_data.json'; a.click();
@@ -479,11 +585,18 @@
                 onMounted(() => { window.addEventListener('click', () => { tooltip.value = null; }); });
 
                 return {
-                    activeTab, currentLang, isLoading, isRecording, tooltip, quizAnswered, settings, history, languages, menuItems, scenarios,
-                    newsLevel, newsStep, newsTopics, newsArticle, newsRevealed, scannerPreview, scannerResult, grammarInput, grammarResult,
+                    // State
+                    activeTab, currentLang, isLoading, isRecording, tooltip, quizAnswered, 
+                    settings, history, languages, menuItems, scenarios, detectedModel,
+                    isValidKey, tempKey, setupError, isVerifying,
+                    // Modules
+                    newsLevel, newsStep, newsTopics, newsArticle, newsRevealed, 
+                    scannerPreview, scannerResult, grammarInput, grammarResult,
                     activeScenario, chatMessages, chatInput, dictQuery, dictResult, journalInput, journalResult,
-                    generateTopics, generateArticle, handleTokenClick, handleScanUpload, processScan, analyzeGrammar, checkQuiz, startScenario,
-                    handleChatSubmit, polishJournal, handleLookup, saveVocab, deleteVocab, saveSettings, factoryReset, exportHistory, speak, startSTT
+                    // Actions
+                    verifyAndSaveKey, resetKey, generateTopics, generateArticle, handleTokenClick, handleScanUpload, processScan, 
+                    analyzeGrammar, checkQuiz, startScenario, handleChatSubmit, polishJournal, handleLookup, saveVocab, deleteVocab, 
+                    exportHistory, speak, startSTT
                 };
             }
         }).mount('#app');
