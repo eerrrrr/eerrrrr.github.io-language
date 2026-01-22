@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyGlot v15.0 | Knowledge Base</title>
+    <title>PolyGlot v15.2 | Fixed Logic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -24,18 +24,24 @@
 
     <div id="app" v-cloak class="w-full h-full flex">
         
-        <div v-if="!isValidKey" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center backdrop-blur-sm">
+        <div v-if="showAuthModal" class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center backdrop-blur-sm">
             <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-md border border-slate-700 shadow-2xl text-center">
                 <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl text-white"><i class="fa-solid fa-key"></i></div>
-                <h2 class="text-2xl font-bold text-white mb-2">PolyGlot v15</h2>
-                <p class="text-slate-400 text-sm mb-6">Enter API Key to unlock AI features (Optional for basic reading).</p>
+                <h2 class="text-2xl font-bold text-white mb-2">PolyGlot v15.2</h2>
+                <p class="text-slate-400 text-sm mb-6">Enter API Key for AI features, or Skip for Reader Mode.</p>
+                
                 <input v-model="tempKey" type="password" placeholder="AIza..." class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none mb-4 font-mono text-center">
+                
                 <div v-if="loginError" class="mb-4 text-red-400 text-xs bg-red-900/20 p-3 rounded-lg">{{ loginError }}</div>
+
                 <button @click="verifyKey" :disabled="!tempKey || isLoading" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition">
                     <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> Connecting...</span>
                     <span v-else>Enable AI Power</span>
                 </button>
-                <button @click="skipLogin" class="mt-4 text-slate-500 text-xs hover:text-white underline">Skip (Offline Mode)</button>
+                
+                <button @click="skipLogin" class="mt-6 text-slate-500 text-xs hover:text-white underline w-full py-2">
+                    Skip (Enter Offline Mode)
+                </button>
             </div>
         </div>
 
@@ -72,7 +78,7 @@
                     <ul class="text-[10px] text-slate-300 space-y-1">
                         <li><strong>Hello:</strong> {{ currentLang.hello }}</li>
                         <li><strong>Script:</strong> {{ currentLang.script }}</li>
-                        <li><strong>Difficulty:</strong> {{ currentLang.difficulty }}</li>
+                        <li><strong>Level:</strong> {{ currentLang.difficulty }}</li>
                     </ul>
                 </div>
             </div>
@@ -85,7 +91,10 @@
             </nav>
 
             <div class="p-4 border-t border-slate-800">
-                <button @click="resetSystem" class="text-xs text-red-400 flex items-center gap-2 hover:text-red-300 w-full px-2 py-2 rounded hover:bg-red-900/20 transition"><i class="fa-solid fa-power-off"></i> Reset Settings</button>
+                <button @click="openAuth" class="text-xs text-slate-400 flex items-center gap-2 hover:text-white w-full px-2 py-2 rounded hover:bg-slate-800 transition">
+                    <i :class="isValidKey ? 'fa-solid fa-key text-green-400' : 'fa-solid fa-lock text-red-400'"></i> 
+                    {{ isValidKey ? 'Change API Key' : 'Login / Set Key' }}
+                </button>
             </div>
         </aside>
 
@@ -95,7 +104,7 @@
                 <h2 class="text-lg font-bold text-white capitalize">{{ activeTab.replace('-', ' ') }}</h2>
                 <div class="flex items-center gap-4 text-xs text-slate-400">
                     <span v-if="isValidKey" class="flex items-center gap-2 text-green-400"><i class="fa-solid fa-bolt"></i> AI Active</span>
-                    <span v-else class="flex items-center gap-2 text-slate-500"><i class="fa-solid fa-eye"></i> Reader Mode</span>
+                    <span v-else class="flex items-center gap-2 text-slate-500 bg-slate-800 px-2 py-1 rounded"><i class="fa-solid fa-eye-slash"></i> Offline Mode</span>
                 </div>
             </header>
 
@@ -104,28 +113,30 @@
                 <div v-if="activeTab === 'import' || activeTab === 'news'" class="max-w-4xl mx-auto space-y-8">
                     
                     <div v-if="!contentData" class="bg-slate-900 p-8 rounded-3xl border border-slate-800">
-                        <div class="flex justify-center mb-6 text-indigo-500 text-4xl"><i class="fa-solid fa-file-import"></i></div>
+                        <div class="flex justify-center mb-6 text-indigo-500 text-4xl"><i class="fa-solid fa-layer-group"></i></div>
                         <h3 class="text-2xl font-bold text-white text-center mb-2">Content Hub</h3>
-                        <p class="text-slate-400 text-center text-sm mb-8">Import PDF text, JSON files, or generate new content.</p>
+                        <p class="text-slate-400 text-center text-sm mb-8">Paste text to analyze or generate new stories.</p>
                         
                         <div class="space-y-4">
-                            <textarea v-model="importText" rows="6" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono text-sm focus:border-indigo-500 outline-none placeholder:text-slate-600" placeholder="Paste your text here (Japanese, English, etc.)..."></textarea>
+                            <textarea v-model="importText" rows="6" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono text-sm focus:border-indigo-500 outline-none placeholder:text-slate-600" placeholder="Paste your Japanese/English/Text here..."></textarea>
                             
                             <div class="grid grid-cols-2 gap-4">
                                 <button @click="processContent('raw')" class="py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition border border-slate-700 flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-eye"></i> Quick View (No AI)
+                                    <i class="fa-solid fa-file-lines"></i> Quick Read (Offline)
                                 </button>
                                 <button @click="processContent('ai')" :disabled="!isValidKey || isLoading" class="py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i v-if="isLoading" class="fa-solid fa-spinner fa-spin"></i>
                                     <span v-else><i class="fa-solid fa-wand-magic-sparkles"></i> AI Deep Analyze</span>
                                 </button>
                             </div>
-                            <div v-if="activeTab === 'news' && isValidKey" class="border-t border-slate-800 pt-4 mt-4">
-                                <p class="text-xs text-slate-500 text-center mb-3">OR Generate New</p>
+
+                            <div v-if="activeTab === 'news'" class="border-t border-slate-800 pt-4 mt-4">
+                                <p class="text-xs text-slate-500 text-center mb-3">OR Generate New Content</p>
                                 <div class="flex gap-2">
-                                    <input v-model="topicInput" type="text" placeholder="Topic..." class="flex-1 bg-slate-800 border-slate-700 rounded-lg px-3 text-sm text-white">
-                                    <button @click="generateNews" :disabled="isLoading" class="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-emerald-500">Generate</button>
+                                    <input v-model="topicInput" :disabled="!isValidKey" type="text" placeholder="Topic (e.g. Travel)..." class="flex-1 bg-slate-800 border-slate-700 rounded-lg px-3 text-sm text-white disabled:opacity-50">
+                                    <button @click="generateNews" :disabled="isLoading || !isValidKey" class="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed">Generate</button>
                                 </div>
+                                <p v-if="!isValidKey" class="text-center text-[10px] text-red-400 mt-2">Login required for AI generation.</p>
                             </div>
                         </div>
                     </div>
@@ -134,7 +145,7 @@
                         <div class="flex justify-between items-center mb-4">
                             <button @click="contentData = null" class="text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Library</button>
                             <div class="flex gap-2">
-                                <button @click="startRevision" v-if="isValidKey" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-amber-500 flex items-center gap-2"><i class="fa-solid fa-brain"></i> Revise This</button>
+                                <button @click="startRevision" v-if="isValidKey && contentData.isAiAnalyzed" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-amber-500 flex items-center gap-2"><i class="fa-solid fa-brain"></i> Quiz Me</button>
                                 <button @click="speak(contentData.main_text)" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-700"><i class="fa-solid fa-volume-high"></i> Listen</button>
                             </div>
                         </div>
@@ -152,13 +163,13 @@
                             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                                 <h4 class="text-xs font-bold text-indigo-400 uppercase mb-4">Translation</h4>
                                 <div class="space-y-4 text-sm text-slate-300">
-                                    <p><strong class="text-white block mb-1">English:</strong> {{ contentData.translation_en }}</p>
+                                    <p><strong class="text-white block mb-1">EN:</strong> {{ contentData.translation_en }}</p>
                                     <div class="h-px bg-slate-800 w-full"></div>
-                                    <p><strong class="text-white block mb-1">Chinese:</strong> {{ contentData.translation_cn }}</p>
+                                    <p><strong class="text-white block mb-1">CN:</strong> {{ contentData.translation_cn }}</p>
                                 </div>
                             </div>
                             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 h-96 overflow-y-auto custom-scrollbar">
-                                <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4">Key Vocabulary</h4>
+                                <h4 class="text-xs font-bold text-emerald-400 uppercase mb-4">Vocabulary</h4>
                                 <div class="space-y-3">
                                     <div v-for="v in contentData.vocabulary" :key="v.word" class="flex justify-between items-start p-3 bg-slate-800 rounded-xl group">
                                         <div><p class="text-white font-bold">{{ v.word }}</p><p class="text-xs text-slate-400">{{ v.meaning_en }} | {{ v.meaning_cn }}</p></div>
@@ -167,7 +178,7 @@
                                 </div>
                             </div>
                             <div class="md:col-span-2 bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                                <h4 class="text-xs font-bold text-amber-400 uppercase mb-4">Grammar Breakdown</h4>
+                                <h4 class="text-xs font-bold text-amber-400 uppercase mb-4">Grammar</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div v-for="g in contentData.grammar" :key="g.point" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
                                         <p class="text-amber-400 font-bold mb-1 text-sm">{{ g.point }}</p>
@@ -178,35 +189,10 @@
                         </div>
                         
                         <div v-else class="text-center p-8 bg-slate-900 rounded-3xl border border-slate-800 border-dashed">
-                            <p class="text-slate-400 mb-4">This is a raw text view.</p>
-                            <button @click="analyzeCurrentText" :disabled="!isValidKey" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50">
-                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Analyze Now
+                            <p class="text-slate-400 mb-4">Currently in Raw Reader Mode.</p>
+                            <button @click="analyzeCurrentText" :disabled="!isValidKey" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> {{ isValidKey ? 'Analyze Now' : 'Login to Analyze' }}
                             </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="revisionData" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8 backdrop-blur-md">
-                    <div class="bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl flex flex-col max-h-full">
-                        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                            <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-brain text-amber-500 mr-2"></i> AI Revision Quiz</h3>
-                            <button @click="revisionData = null" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                        <div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-                            <div v-for="(q, idx) in revisionData.questions" :key="idx" class="bg-slate-800 p-6 rounded-2xl">
-                                <p class="text-white font-bold mb-4 text-lg">{{ idx + 1 }}. {{ q.question }}</p>
-                                <div class="space-y-2">
-                                    <button v-for="(opt, oidx) in q.options" :key="oidx" 
-                                        @click="q.selected = oidx"
-                                        :class="['w-full text-left p-3 rounded-xl border transition', 
-                                            q.selected === oidx 
-                                                ? (oidx === q.answer ? 'bg-green-600/20 border-green-500 text-green-400' : 'bg-red-600/20 border-red-500 text-red-400') 
-                                                : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-700']">
-                                        {{ opt }}
-                                    </button>
-                                </div>
-                                <p v-if="q.selected !== undefined" class="mt-4 text-sm text-slate-400 bg-slate-900 p-3 rounded-lg"><i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i> {{ q.explanation }}</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,16 +201,34 @@
                     <div class="flex justify-between mb-6">
                         <h3 class="text-2xl font-bold text-white">Notebook</h3>
                         <div class="flex gap-2">
-                            <button @click="exportData" class="px-4 py-2 bg-slate-800 text-emerald-400 rounded-lg text-xs font-bold hover:bg-slate-700">Export JSON</button>
+                            <button @click="exportData" class="px-4 py-2 bg-slate-800 text-emerald-400 rounded-lg text-xs font-bold hover:bg-slate-700">Export</button>
                             <button @click="clearNotebook" class="px-4 py-2 bg-slate-800 text-red-400 rounded-lg text-xs font-bold hover:bg-slate-700">Clear</button>
                         </div>
                     </div>
-                    <div v-if="notebook.length === 0" class="text-center py-20 text-slate-600"><i class="fa-solid fa-book text-6xl mb-4"></i><p>Empty Notebook</p></div>
+                    <div v-if="notebook.length === 0" class="text-center py-20 text-slate-600"><i class="fa-solid fa-book text-6xl mb-4"></i><p>No words saved yet.</p></div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div v-for="(item, idx) in notebook" :key="idx" class="bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-indigo-500 transition relative group">
                             <button @click="notebook.splice(idx, 1); saveNotebook()" class="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button>
                             <div class="flex items-center gap-3 mb-2"><h4 class="text-xl font-bold text-white">{{ item.word }}</h4><button @click="speak(item.word)" class="text-indigo-500 hover:text-white"><i class="fa-solid fa-volume-high text-xs"></i></button></div>
                             <p class="text-sm text-slate-400">{{ item.meaning_en }}</p><p class="text-sm text-slate-400">{{ item.meaning_cn }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="revisionData" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-8 backdrop-blur-md">
+                    <div class="bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl flex flex-col max-h-full">
+                        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-brain text-amber-500 mr-2"></i> Quiz Time</h3>
+                            <button @click="revisionData = null" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                        <div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+                            <div v-for="(q, idx) in revisionData.questions" :key="idx" class="bg-slate-800 p-6 rounded-2xl">
+                                <p class="text-white font-bold mb-4 text-lg">{{ idx + 1 }}. {{ q.question }}</p>
+                                <div class="space-y-2">
+                                    <button v-for="(opt, oidx) in q.options" :key="oidx" @click="q.selected = oidx" :class="['w-full text-left p-3 rounded-xl border transition', q.selected === oidx ? (oidx === q.answer ? 'bg-green-600/20 border-green-500 text-green-400' : 'bg-red-600/20 border-red-500 text-red-400') : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-700']">{{ opt }}</button>
+                                </div>
+                                <p v-if="q.selected !== undefined" class="mt-4 text-sm text-slate-400 bg-slate-900 p-3 rounded-lg"><i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i> {{ q.explanation }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -256,16 +260,17 @@
             setup() {
                 const currentModel = ref(localStorage.getItem('pg_model') || 'gemini-1.5-flash-001');
                 const isValidKey = ref(false);
+                const showAuthModal = ref(true); // NEW: Controls modal visibility
                 const tempKey = ref('');
                 const apiKey = ref(localStorage.getItem('pg_key') || '');
                 const isLoading = ref(false);
                 const loginError = ref('');
                 
-                const activeTab = ref('import'); // Default to import/hub
+                const activeTab = ref('import'); 
                 const topicInput = ref('');
                 const importText = ref('');
                 const contentData = ref(null);
-                const revisionData = ref(null); // Stores quiz data
+                const revisionData = ref(null); 
                 const notebook = ref(JSON.parse(localStorage.getItem('pg_notebook')) || []);
                 const dictPopup = ref(null);
 
@@ -284,7 +289,7 @@
                     { id: 'notebook', label: 'Notebook', icon: 'fa-book-bookmark' }
                 ];
 
-                // --- KEY LOGIC ---
+                // --- KEY LOGIC (FIXED) ---
                 const verifyKey = async () => {
                     if(!tempKey.value) return;
                     isLoading.value = true;
@@ -295,19 +300,29 @@
                         apiKey.value = tempKey.value;
                         localStorage.setItem('pg_key', tempKey.value);
                         isValidKey.value = true;
+                        showAuthModal.value = false; // Close modal on success
                     } catch(e) {
                         loginError.value = e.message;
                     } finally { isLoading.value = false; }
                 };
 
-                const skipLogin = () => { isValidKey.value = false; }; // Allow offline use
-                const resetSystem = () => { if(confirm("Reset?")) { localStorage.clear(); location.reload(); } };
+                const skipLogin = () => { 
+                    showAuthModal.value = false; // Just close modal, isValidKey remains false
+                }; 
+                
+                const openAuth = () => { showAuthModal.value = true; };
+
                 const saveSettings = () => localStorage.setItem('pg_model', currentModel.value);
-                if(apiKey.value) isValidKey.value = true;
+                
+                // Initialize
+                if(apiKey.value) {
+                    isValidKey.value = true;
+                    showAuthModal.value = false;
+                }
 
                 // --- AI LOGIC ---
                 const callAI = async (prompt, schema = null) => {
-                    if(!apiKey.value) return null;
+                    if(!isValidKey.value) return null;
                     isLoading.value = true;
                     try {
                         const ai = new GoogleGenAI({ apiKey: apiKey.value });
@@ -324,14 +339,12 @@
                     if (!importText.value.trim()) return;
                     
                     if (mode === 'raw') {
-                        // Offline View
                         contentData.value = {
                             title: "Imported Text",
                             main_text: importText.value,
                             isAiAnalyzed: false
                         };
                     } else {
-                        // AI Analyze
                         const schema = {
                             type: "OBJECT",
                             properties: {
@@ -352,8 +365,7 @@
 
                 const analyzeCurrentText = async () => {
                     if (!contentData.value) return;
-                    const text = contentData.value.main_text;
-                    importText.value = text;
+                    importText.value = contentData.value.main_text;
                     await processContent('ai');
                 };
 
@@ -424,7 +436,7 @@
                 };
 
                 return {
-                    isValidKey, tempKey, apiKey, isLoading, loginError, verifyKey, skipLogin, resetSystem,
+                    isValidKey, showAuthModal, tempKey, apiKey, isLoading, loginError, verifyKey, skipLogin, openAuth,
                     activeTab, tabs, currentLang, languages, currentModel, saveSettings,
                     topicInput, importText, contentData, notebook, dictPopup, revisionData,
                     generateNews, processContent, analyzeCurrentText, startRevision, lookupWord, addToNotebook, speak, clearNotebook, exportData
