@@ -1,0 +1,805 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyGlot Master v11.0 | Tri-Lingual Brain</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        [v-cloak] { display: none; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f0f2f5; }
+        .token-blur { filter: blur(10px); transition: filter 0.5s ease; pointer-events: none; }
+        .token-reveal { filter: blur(0); pointer-events: auto; }
+        .tooltip-card { animation: fadeInUp 0.2s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .recording-pulse { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0%, 100% { background: #ef4444; } 50% { background: #b91c1c; transform: scale(1.05); } }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="antialiased">
+    <div id="app" v-cloak class="flex flex-col md:flex-row min-h-screen">
+        <!-- Navigation Sidebar -->
+        <aside class="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col sticky top-0 md:h-screen z-40">
+            <div class="p-8">
+                <h1 class="text-2xl font-black text-white flex items-center gap-3">
+                    <i class="fa-solid fa-brain-circuit text-indigo-400"></i>
+                    PolyGlot v11
+                </h1>
+                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-[0.2em] font-black">Tri-Lingual Method</p>
+            </div>
+
+            <div class="px-6 mb-8">
+                <label class="text-[10px] font-bold text-slate-500 uppercase block mb-3">Target Language</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button v-for="lang in languages" :key="lang.name" 
+                        @click="currentLang = lang.name"
+                        :class="['flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all', currentLang === lang.name ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' : 'bg-slate-800/50 hover:bg-slate-800']">
+                        <span>{{ lang.flag }}</span>
+                        <span>{{ lang.name }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+                <button v-for="m in menuItems" :key="m.id" @click="activeTab = m.id"
+                    :class="['w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold transition-all', activeTab === m.id ? 'bg-white/10 text-white' : 'hover:bg-white/5 hover:text-slate-100']">
+                    <i :class="['fa-solid w-6', m.icon, activeTab === m.id ? 'text-indigo-400' : 'text-slate-500']"></i>
+                    <span class="text-sm">{{ m.label }}</span>
+                </button>
+            </nav>
+
+            <div class="p-6 border-t border-white/5">
+                <button @click="activeTab = 'settings'" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-white transition">
+                    <i class="fa-solid fa-gears"></i>
+                    <span class="text-sm font-bold">System Config</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 p-4 md:p-12 overflow-y-auto relative">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- NEWS MODE (Shang Wenjie) -->
+                <div v-if="activeTab === 'news'" class="space-y-8 animate-in fade-in duration-500">
+                    <header class="flex justify-between items-end">
+                        <div>
+                            <h2 class="text-4xl font-black text-slate-900">Daily News</h2>
+                            <p class="text-slate-500 font-medium">Step-by-step listening & extraction methodology.</p>
+                        </div>
+                        <div class="flex bg-slate-200 p-1 rounded-2xl">
+                            <button v-for="l in ['A2','B1','B2','C1']" :key="l" @click="newsLevel = l"
+                                :class="['px-4 py-2 rounded-xl text-xs font-black transition', newsLevel === l ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500']">
+                                {{ l }}
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Selection Phase -->
+                    <div v-if="newsStep === 'setup'" class="bg-white p-12 rounded-[48px] shadow-xl text-center space-y-8">
+                        <div class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[32px] flex items-center justify-center mx-auto text-4xl shadow-inner">
+                            <i class="fa-solid fa-newspaper"></i>
+                        </div>
+                        <h3 class="text-2xl font-black">Generate Learning Topics</h3>
+                        <p class="text-slate-400 max-w-sm mx-auto">AI will curate 3 topics based on current global events for your {{ newsLevel }} level.</p>
+                        <button @click="generateTopics" :disabled="isLoading" class="px-10 py-5 bg-indigo-600 text-white rounded-[24px] font-black shadow-xl shadow-indigo-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+                            <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Curating...</span>
+                            <span v-else>Explore Today's Topics</span>
+                        </button>
+
+                        <div v-if="newsTopics.length" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8 animate-in slide-in-from-bottom-4">
+                            <button v-for="t in newsTopics" @click="generateArticle(t)" 
+                                class="p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 transition text-left group">
+                                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">{{ t.category }}</span>
+                                <h4 class="font-bold text-slate-800 group-hover:text-indigo-600">{{ t.title }}</h4>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Article Phase -->
+                    <div v-if="newsStep === 'article'" class="space-y-6">
+                        <div class="bg-white p-10 rounded-[48px] shadow-xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-10">
+                                <span class="px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase">{{ newsArticle.category }}</span>
+                                <button @click="newsStep = 'setup'; newsArticle = null" class="text-slate-400 hover:text-slate-900"><i class="fa-solid fa-rotate-left"></i></button>
+                            </div>
+                            
+                            <h3 class="text-3xl font-black text-slate-900 mb-6 leading-tight">{{ newsArticle.title }}</h3>
+
+                            <!-- Blind Listening Wrapper -->
+                            <div class="relative bg-slate-50 rounded-[40px] p-8 md:p-12 min-h-[300px] flex flex-col">
+                                <div :class="['text-2xl font-medium leading-[2] text-slate-700 select-none', newsRevealed ? 'token-reveal' : 'token-blur']">
+                                    <template v-for="(word, i) in newsArticle.content.split(' ')">
+                                        <span @click="handleTokenClick($event, word)" class="cursor-pointer hover:text-indigo-600 hover:underline transition-all">{{ word }} </span>
+                                    </template>
+                                </div>
+
+                                <div v-if="!newsRevealed" class="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                                    <button @click="speak(newsArticle.content)" class="w-24 h-24 bg-indigo-600 text-white rounded-full flex items-center justify-center text-3xl shadow-2xl shadow-indigo-300 hover:scale-110 transition active:scale-95">
+                                        <i class="fa-solid fa-play"></i>
+                                    </button>
+                                    <p class="text-sm font-black text-indigo-900">LISTEN FIRST (Blind Mode)</p>
+                                    <button @click="newsRevealed = true" class="px-6 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-full text-xs font-bold shadow-sm hover:bg-indigo-50">Reveal Text & Analyze</button>
+                                </div>
+                            </div>
+
+                            <div v-if="newsRevealed" class="mt-10 p-8 bg-indigo-50 rounded-[32px] border border-indigo-100 flex flex-col md:flex-row gap-8">
+                                <div class="flex-1">
+                                    <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Dual Summary</h4>
+                                    <p class="text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">{{ newsArticle.bilingual_summary }}</p>
+                                </div>
+                                <div class="w-full md:w-64 space-y-4">
+                                    <button @click="speak(newsArticle.content)" class="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black border border-indigo-200 flex items-center justify-center gap-2 hover:bg-indigo-50">
+                                        <i class="fa-solid fa-microphone-lines"></i> Shadow Audio
+                                    </button>
+                                    <p class="text-[10px] text-slate-400 font-bold italic text-center">Tip: Click any word to translate and save to vocabulary.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAGIC SCANNER -->
+                <div v-if="activeTab === 'scanner'" class="space-y-8 animate-in fade-in duration-500">
+                    <header>
+                        <h2 class="text-4xl font-black text-slate-900">Magic Scanner</h2>
+                        <p class="text-slate-500 font-medium">Extract and learn from photos or screenshots.</p>
+                    </header>
+
+                    <div class="bg-white p-12 rounded-[48px] shadow-xl border border-slate-100 text-center space-y-8">
+                        <div v-if="!scannerPreview" @click="$refs.fileInput.click()" class="border-4 border-dashed border-slate-100 rounded-[40px] p-20 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-all group">
+                            <i class="fa-solid fa-cloud-arrow-up text-6xl text-slate-200 group-hover:text-indigo-400 mb-6"></i>
+                            <h3 class="text-xl font-black text-slate-400">Click to Upload Image</h3>
+                            <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleScanUpload">
+                        </div>
+
+                        <div v-else class="space-y-8">
+                            <div class="relative inline-block group">
+                                <img :src="scannerPreview" class="max-h-[300px] rounded-3xl shadow-xl border-4 border-white">
+                                <button @click="scannerPreview = null" class="absolute -top-4 -right-4 w-10 h-10 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                            <button @click="processScan" :disabled="isLoading" class="w-full py-6 bg-slate-900 text-white rounded-[32px] font-black text-xl hover:bg-black transition disabled:opacity-50">
+                                <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Extracting...</span>
+                                <span v-else><i class="fa-solid fa-wand-magic mr-2"></i>Analyze Text</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="scannerResult" class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-6">
+                        <div class="bg-white p-10 rounded-[40px] shadow-lg border border-slate-100">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Raw Content</h4>
+                            <div class="text-xl font-medium leading-relaxed text-slate-800 whitespace-pre-wrap">{{ scannerResult.content }}</div>
+                            <button @click="speak(scannerResult.content)" class="mt-6 p-4 bg-slate-50 text-slate-400 rounded-2xl hover:text-indigo-600 transition"><i class="fa-solid fa-volume-high"></i> Listen All</button>
+                        </div>
+                        <div class="bg-indigo-600 p-10 rounded-[40px] shadow-xl text-white">
+                            <h4 class="text-[10px] font-black text-white/60 uppercase tracking-widest mb-8">Extracted Key Words</h4>
+                            <div class="space-y-4">
+                                <div v-for="w in scannerResult.extracted_words" class="p-6 bg-white/10 rounded-3xl border border-white/10 flex justify-between items-start group">
+                                    <div>
+                                        <h5 class="text-xl font-black">{{ w.word }}</h5>
+                                        <p class="text-xs font-bold text-indigo-200 mt-1">{{ w.def_en }} | {{ w.def_cn }}</p>
+                                    </div>
+                                    <button @click="saveVocab(w)" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white text-indigo-600 transition"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRAMMAR STUDIO -->
+                <div v-if="activeTab === 'grammar'" class="space-y-8 animate-in fade-in duration-500">
+                    <header>
+                        <h2 class="text-4xl font-black text-slate-900">Grammar Studio</h2>
+                        <p class="text-slate-500 font-medium">Visualized rules and interactive understanding.</p>
+                    </header>
+
+                    <div class="relative group">
+                        <input v-model="grammarInput" @keyup.enter="analyzeGrammar" type="text" placeholder="Explain 'Subjunctive Mood' or 'German Cases'..." class="w-full pl-8 pr-44 py-6 bg-white border border-slate-200 rounded-[32px] shadow-sm outline-none focus:ring-8 focus:ring-indigo-500/5 transition-all text-xl font-medium">
+                        <div class="absolute right-3 top-2 bottom-2 flex gap-2">
+                             <button @click="startSTT('grammar')" :class="['w-14 rounded-[22px] flex items-center justify-center transition-all', isRecording ? 'recording-pulse text-white' : 'bg-slate-50 text-slate-400']">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                            <button @click="analyzeGrammar" :disabled="isLoading" class="px-10 bg-indigo-600 text-white rounded-[24px] font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50">
+                                <i v-if="isLoading" class="fa-solid fa-spinner fa-spin"></i>
+                                <span v-else>Analyze</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="grammarResult" class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-8">
+                        <div class="space-y-8">
+                            <div class="bg-white p-10 rounded-[48px] shadow-xl border border-slate-100">
+                                <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6">The Rule</h3>
+                                <p class="text-2xl font-black text-slate-900 mb-6">{{ grammarResult.grammar_point.rule }}</p>
+                                <div class="bg-slate-50 p-6 rounded-3xl space-y-4">
+                                    <div v-for="ex in grammarResult.grammar_point.examples" class="flex gap-4 group">
+                                        <button @click="speak(ex)" class="text-slate-300 group-hover:text-indigo-500"><i class="fa-solid fa-volume-high"></i></button>
+                                        <p class="font-bold text-slate-700 italic">"{{ ex }}"</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 p-8 rounded-[40px]">
+                                <h4 class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">Master Tip</h4>
+                                <p class="text-amber-900 font-medium leading-relaxed">{{ grammarResult.comparison || 'Focus on the logic, not just the formula.' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-600 p-10 rounded-[48px] shadow-2xl text-white flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-[10px] font-black text-white/50 uppercase tracking-widest mb-10">Knowledge Check</h4>
+                                <p class="text-xl font-black mb-8 leading-tight">{{ grammarResult.grammar_point.quiz.question }}</p>
+                                <div class="space-y-3">
+                                    <button v-for="(opt, idx) in grammarResult.grammar_point.quiz.options" 
+                                        @click="checkQuiz(idx)"
+                                        :class="['w-full p-6 rounded-3xl text-left font-bold transition-all border-2', quizAnswered === idx ? (idx === grammarResult.grammar_point.quiz.answer ? 'bg-green-500 border-green-400' : 'bg-red-500 border-red-400') : 'bg-white/10 border-white/5 hover:bg-white/20']">
+                                        {{ opt }}
+                                    </button>
+                                </div>
+                            </div>
+                            <p v-if="quizAnswered !== null" class="mt-8 text-center font-black text-sm uppercase tracking-widest">{{ quizAnswered === grammarResult.grammar_point.quiz.answer ? 'Excellent! Correct Logic.' : 'Not quite. Check the rule again.' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCENARIO DOJO (Retained) -->
+                <div v-if="activeTab === 'scenario'" class="h-[calc(100vh-8rem)] flex flex-col animate-in fade-in duration-500">
+                    <header class="mb-8">
+                        <h2 class="text-4xl font-black text-slate-900">Scenario Dojo</h2>
+                        <p class="text-slate-500 font-medium">Roleplay with AI across unlimited tri-lingual contexts.</p>
+                    </header>
+
+                    <div v-if="!activeScenario" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button v-for="s in scenarios" @click="startScenario(s)" class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all group text-left">
+                            <div class="w-16 h-16 bg-slate-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition">
+                                <i :class="['fa-solid', s.icon, 'text-2xl']"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-800 mb-2">{{ s.title }}</h3>
+                            <p class="text-xs text-slate-400 font-medium leading-relaxed">{{ s.description }}</p>
+                        </button>
+                    </div>
+
+                    <div v-else class="flex-1 flex flex-col bg-white rounded-[48px] shadow-2xl overflow-hidden border border-slate-100 relative">
+                        <div class="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                            <div class="flex items-center gap-4">
+                                <button @click="activeScenario = null" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-sm transition"><i class="fa-solid fa-arrow-left"></i></button>
+                                <h3 class="font-black text-lg">{{ activeScenario.title }}</h3>
+                            </div>
+                            <button @click="speak(chatMessages[chatMessages.length-1].content)" class="px-5 py-2 bg-indigo-600 text-white rounded-full text-xs font-black"><i class="fa-solid fa-volume-high mr-2"></i> Hear Last Turn</button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar" id="chat-container">
+                            <div v-for="msg in chatMessages" :key="msg.id" :class="['flex flex-col', msg.role === 'user' ? 'items-end' : 'items-start']">
+                                <div v-if="msg.role === 'assistant'" class="max-w-[90%] bg-white p-6 rounded-[32px] rounded-tl-none shadow-sm border border-slate-100 relative group">
+                                    <div class="flex flex-wrap gap-x-1 gap-y-2 mb-3">
+                                        <span v-for="(word, i) in msg.content.split(' ')" @click="handleTokenClick($event, word)" class="cursor-pointer hover:text-indigo-600 hover:underline font-medium">{{ word }} </span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 font-bold italic border-t border-slate-50 pt-4">{{ msg.translation }}</p>
+                                </div>
+                                <div v-else class="max-w-[85%] bg-slate-900 text-white p-6 rounded-[32px] rounded-tr-none shadow-lg shadow-slate-200 font-medium">{{ msg.content }}</div>
+                            </div>
+                            <div v-if="isLoading" class="flex gap-2 p-6 bg-slate-50 rounded-full w-24"><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-100"></span><span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-200"></span></div>
+                        </div>
+
+                        <div class="p-8 border-t border-slate-100">
+                            <div class="flex gap-4">
+                                <input v-model="chatInput" @keyup.enter="handleChatSubmit" type="text" placeholder="Respond to the tutor..." class="flex-1 px-8 py-5 bg-slate-100 border-none rounded-[32px] outline-none focus:ring-4 focus:ring-indigo-500/10 transition text-lg">
+                                <button @click="handleChatSubmit" :disabled="!chatInput.trim() || isLoading" class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-xl hover:bg-indigo-700 transition disabled:opacity-50"><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOURNAL (Retained) -->
+                <div v-if="activeTab === 'journal'" class="space-y-8 animate-in fade-in duration-500">
+                    <header>
+                        <h2 class="text-4xl font-black text-slate-900">Journal Polishing</h2>
+                        <p class="text-slate-500 font-medium">Turn your thoughts into native-level expressions.</p>
+                    </header>
+                    <div class="bg-white p-12 rounded-[48px] shadow-xl border border-slate-100 relative">
+                        <textarea v-model="journalInput" rows="5" placeholder="I went to the store and bought some milk but I felt lonely today..." class="w-full bg-slate-50 border-none rounded-[32px] p-8 outline-none focus:ring-8 focus:ring-indigo-500/5 transition text-xl font-medium leading-relaxed mb-8"></textarea>
+                        <button @click="polishJournal" :disabled="!journalInput.trim() || isLoading" class="w-full py-6 bg-slate-900 text-white rounded-[32px] font-black text-xl hover:bg-black transition flex items-center justify-center gap-4 disabled:opacity-50">
+                            <i v-if="isLoading" class="fa-solid fa-spinner fa-spin"></i>
+                            <i v-else class="fa-solid fa-sparkles"></i>
+                            Polish to Native Level
+                        </button>
+                    </div>
+
+                    <div v-if="journalResult" class="bg-indigo-600 p-12 rounded-[48px] shadow-2xl text-white animate-in slide-in-from-bottom-8">
+                        <div class="flex justify-between items-start mb-10">
+                            <span class="px-4 py-2 bg-white/20 rounded-full text-[10px] font-black uppercase">Native Optimization</span>
+                            <button @click="speak(journalResult.optimized)" class="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white text-indigo-600 shadow-xl transition"><i class="fa-solid fa-volume-high"></i></button>
+                        </div>
+                        <p class="text-3xl font-black leading-tight mb-10">{{ journalResult.optimized }}</p>
+                        <div class="p-8 bg-black/20 rounded-[32px] border border-white/5 space-y-4">
+                            <h4 class="text-[10px] font-black text-white/50 uppercase tracking-widest">Tri-Lingual Logic Analysis</h4>
+                            <p class="text-lg opacity-90 leading-relaxed">{{ journalResult.analysis }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DICTIONARY -->
+                <div v-if="activeTab === 'dictionary'" class="space-y-8 animate-in fade-in duration-500">
+                    <header>
+                        <h2 class="text-4xl font-black text-slate-900">AI Contextual Lookup</h2>
+                        <p class="text-slate-500 font-medium">Deep analysis with Tri-Lingual support.</p>
+                    </header>
+                    <div class="relative group">
+                        <input v-model="dictQuery" @keyup.enter="handleLookup" type="text" placeholder="Search word, phrase or grammar..." class="w-full pl-8 pr-44 py-6 bg-white border border-slate-200 rounded-[32px] shadow-sm outline-none focus:ring-8 focus:ring-indigo-500/5 transition-all text-xl font-medium">
+                        <button @click="handleLookup" :disabled="isLoading" class="absolute right-3 top-3 bottom-3 px-10 bg-indigo-600 text-white rounded-[24px] font-bold shadow-lg hover:bg-indigo-700 disabled:opacity-50">
+                            <i v-if="isLoading" class="fa-solid fa-spinner fa-spin"></i>
+                            <span v-else>Lookup</span>
+                        </button>
+                    </div>
+
+                    <div v-if="dictResult" class="bg-white p-12 rounded-[48px] shadow-xl border border-slate-50 space-y-10 animate-in slide-in-from-bottom-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase mb-3 inline-block">{{ dictResult.pos }}</span>
+                                <h3 class="text-5xl font-black text-slate-900">{{ dictResult.term }}</h3>
+                            </div>
+                            <button @click="saveVocab({word: dictResult.term, def_en: dictResult.definition_en, def_cn: dictResult.definition_cn})" class="px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg"><i class="fa-solid fa-plus"></i> Store</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="space-y-6">
+                                <p class="text-2xl font-bold text-slate-700">{{ dictResult.definition_en }}</p>
+                                <p class="text-xl font-medium text-slate-500">{{ dictResult.definition_cn }}</p>
+                                <div class="p-8 bg-slate-50 rounded-[32px] border border-slate-100 group relative">
+                                    <button @click="speak(dictResult.example)" class="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition text-indigo-400"><i class="fa-solid fa-volume-high"></i></button>
+                                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Contextual Example</h4>
+                                    <p class="text-lg font-black text-slate-800 italic leading-relaxed">"{{ dictResult.example }}"</p>
+                                </div>
+                            </div>
+                            <div v-if="dictResult.related_grammar" class="p-8 bg-indigo-50 rounded-[40px] border border-indigo-100">
+                                <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Grammar Connection</h4>
+                                <p class="text-slate-700 font-medium leading-relaxed">{{ dictResult.related_grammar }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORY / VOCAB -->
+                <div v-if="activeTab === 'history'" class="space-y-8 animate-in fade-in duration-500">
+                    <header class="flex justify-between items-end">
+                        <div>
+                            <h2 class="text-4xl font-black text-slate-900">Knowledge Bank</h2>
+                            <p class="text-slate-500 font-medium">Items stored from news, scans, and chats.</p>
+                        </div>
+                        <button @click="exportHistory" class="text-xs font-black text-indigo-600 px-4 py-2 bg-indigo-50 rounded-full hover:bg-indigo-100 transition"><i class="fa-solid fa-download mr-2"></i> Export JSON</button>
+                    </header>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div v-for="(v, i) in history.vocab" :key="i" class="bg-white p-6 rounded-[32px] border border-slate-50 shadow-sm hover:shadow-xl transition-all group relative">
+                            <button @click="deleteVocab(i)" class="absolute top-4 right-4 text-slate-200 hover:text-red-400 transition opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button>
+                            <div class="flex items-center gap-2 mb-4">
+                                <h4 class="text-xl font-black text-slate-900">{{ v.word }}</h4>
+                                <button @click="speak(v.word)" class="text-slate-300 hover:text-indigo-400 transition"><i class="fa-solid fa-volume-high text-xs"></i></button>
+                            </div>
+                            <p class="text-xs font-bold text-slate-500 mb-2">{{ v.def_en }}</p>
+                            <p class="text-xs font-bold text-indigo-400">{{ v.def_cn }}</p>
+                        </div>
+                    </div>
+                    <div v-if="!history.vocab.length" class="text-center py-24 opacity-20">
+                        <i class="fa-solid fa-inbox text-8xl mb-6"></i>
+                        <p class="text-2xl font-black">Bank is empty.</p>
+                    </div>
+                </div>
+
+                <!-- SETTINGS -->
+                <div v-if="activeTab === 'settings'" class="max-w-xl mx-auto space-y-8 animate-in fade-in duration-500">
+                    <h2 class="text-3xl font-black">System Configuration</h2>
+                    <div class="bg-white p-10 rounded-[40px] shadow-xl border border-slate-100 space-y-6">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Gemini API Key</label>
+                            <input v-model="settings.apiKey" type="password" placeholder="AI Studio Key..." class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 transition">
+                        </div>
+                        <button @click="saveSettings" class="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black shadow-xl hover:bg-indigo-700 transition">Save Configuration</button>
+                        <div class="pt-6 border-t border-slate-50 flex flex-col gap-4">
+                            <button @click="factoryReset" class="w-full py-4 text-red-400 font-bold hover:text-red-600 transition">Factory Reset System</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Tooltip Card -->
+        <div v-if="tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }" class="fixed z-[100] w-64 bg-slate-900 text-white p-6 rounded-[32px] shadow-2xl tooltip-card border border-white/10" @click.stop>
+            <div class="flex justify-between items-start mb-4">
+                <h5 class="text-xl font-black">{{ tooltip.word }}</h5>
+                <button @click="tooltip = null" class="text-slate-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div v-if="tooltip.loading" class="flex justify-center py-4"><i class="fa-solid fa-spinner fa-spin text-indigo-400"></i></div>
+            <div v-else class="space-y-4">
+                <span class="px-2 py-0.5 bg-indigo-600 rounded text-[10px] font-black uppercase">{{ tooltip.pos }}</span>
+                <p class="text-xs font-bold text-slate-300 leading-relaxed">{{ tooltip.def_en }}</p>
+                <p class="text-xs font-bold text-indigo-400">{{ tooltip.def_cn }}</p>
+                <button @click="saveVocab(tooltip)" class="w-full py-3 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase mt-2 hover:bg-indigo-400 hover:text-white transition">Add to History</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+{
+  "imports": {
+    "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+    <script type="module">
+        import { createApp, ref, computed, watch, onMounted, nextTick } from 'vue';
+        import { GoogleGenAI, Type } from "@google/genai";
+
+        const HARDCODED_API_KEY = ""; // Paste key here for convenience
+
+        createApp({
+            setup() {
+                const activeTab = ref('news');
+                const currentLang = ref('Japanese');
+                const isLoading = ref(false);
+                const isRecording = ref(false);
+                const tooltip = ref(null);
+                const quizAnswered = ref(null);
+
+                const settings = ref({
+                    apiKey: HARDCODED_API_KEY || localStorage.getItem('pm_v11_key') || ''
+                });
+
+                const history = ref({
+                    vocab: JSON.parse(localStorage.getItem('pm_v11_vocab')) || []
+                });
+
+                // NEWS STATE
+                const newsLevel = ref('B1');
+                const newsStep = ref('setup');
+                const newsTopics = ref([]);
+                const newsArticle = ref(null);
+                const newsRevealed = ref(false);
+
+                // SCANNER STATE
+                const scannerPreview = ref(null);
+                const scannerResult = ref(null);
+
+                // GRAMMAR STATE
+                const grammarInput = ref('');
+                const grammarResult = ref(null);
+
+                // SCENARIO STATE
+                const activeScenario = ref(null);
+                const chatMessages = ref([]);
+                const chatInput = ref('');
+
+                // DICTIONARY STATE
+                const dictQuery = ref('');
+                const dictResult = ref(null);
+
+                const journalInput = ref('');
+                const journalResult = ref(null);
+
+                const languages = [
+                    { name: 'Japanese', flag: '🇯🇵', code: 'ja-JP' },
+                    { name: 'Finnish', flag: '🇫🇮', code: 'fi-FI' },
+                    { name: 'German', flag: '🇩🇪', code: 'de-DE' },
+                    { name: 'Korean', flag: '🇰🇷', code: 'ko-KR' },
+                    { name: 'English', flag: '🇺🇸', code: 'en-US' },
+                    { name: 'French', flag: '🇫🇷', code: 'fr-FR' }
+                ];
+
+                const menuItems = [
+                    { id: 'news', label: 'Daily News', icon: 'fa-clapperboard' },
+                    { id: 'scanner', label: 'Magic Scanner', icon: 'fa-wand-magic-sparkles' },
+                    { id: 'grammar', label: 'Grammar Studio', icon: 'fa-microchip' },
+                    { id: 'scenario', label: 'Scenario Dojo', icon: 'fa-mask' },
+                    { id: 'journal', label: 'Journal Polish', icon: 'fa-pen-nib' },
+                    { id: 'dictionary', label: 'Context Lookup', icon: 'fa-magnifying-glass' },
+                    { id: 'history', label: 'Knowledge Bank', icon: 'fa-database' }
+                ];
+
+                const scenarios = [
+                    { id: 'coffee', title: 'Coffee Shop', icon: 'fa-mug-hot', description: 'Order complex drinks and handle a payment issue.' },
+                    { id: 'interview', title: 'Tech Interview', icon: 'fa-code', description: 'Discuss your experience and project architecture.' },
+                    { id: 'bar', title: 'Bar Night', icon: 'fa-martini-glass', description: 'Socializing and making new local friends.' }
+                ];
+
+                // API HANDLER
+                const getAI = () => {
+                    const key = settings.value.apiKey || HARDCODED_API_KEY;
+                    if (!key) {
+                        alert("Please configure your Gemini API Key in Settings.");
+                        activeTab.value = 'settings';
+                        return null;
+                    }
+                    return new GoogleGenAI({ apiKey: key });
+                };
+
+                const callGemini = async (prompt, imageBase64 = null, schema = null) => {
+                    const ai = getAI();
+                    if (!ai) return null;
+                    isLoading.value = true;
+                    try {
+                        const model = ai.models.generateContent({
+                            model: 'gemini-1.5-flash',
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    ...(imageBase64 ? [{ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } }] : [])
+                                ]
+                            }],
+                            config: schema ? {
+                                responseMimeType: 'application/json',
+                                responseSchema: schema
+                            } : {}
+                        });
+                        const response = await model;
+                        return schema ? JSON.parse(response.text) : response.text;
+                    } catch (err) {
+                        alert("API Error: " + err.message);
+                        console.error(err);
+                        return null;
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                // METHODS
+                const speak = (text) => {
+                    if (!window.speechSynthesis) return;
+                    window.speechSynthesis.cancel();
+                    const ut = new SpeechSynthesisUtterance(text);
+                    const l = languages.find(lang => lang.name === currentLang.value);
+                    ut.lang = l ? l.code : 'en-US';
+                    window.speechSynthesis.speak(ut);
+                };
+
+                const startSTT = (target) => {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (!SpeechRecognition) return alert("Browser does not support STT.");
+                    const rec = new SpeechRecognition();
+                    const l = languages.find(lang => lang.name === currentLang.value);
+                    rec.lang = l ? l.code : 'en-US';
+                    rec.onstart = () => isRecording.value = true;
+                    rec.onend = () => isRecording.value = false;
+                    rec.onresult = (e) => {
+                        const transcript = e.results[0][0].transcript;
+                        if (target === 'grammar') grammarInput.value += transcript;
+                        if (target === 'chat') chatInput.value += transcript;
+                    };
+                    rec.start();
+                };
+
+                // FEATURE LOGIC
+                const generateTopics = async () => {
+                    const schema = {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                category: { type: Type.STRING }
+                            }
+                        }
+                    };
+                    const res = await callGemini(`Generate 3 trending news topics for a ${currentLang.value} learner at ${newsLevel.value} level. Each topic should be globally relevant. Return JSON array.`, null, schema);
+                    if (res) newsTopics.value = res;
+                };
+
+                const generateArticle = async (topic) => {
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING },
+                            category: { type: Type.STRING },
+                            content: { type: Type.STRING, description: "A high-quality 300-word article for learning." },
+                            bilingual_summary: { type: Type.STRING, description: "Detailed summary in English and Traditional Chinese." }
+                        }
+                    };
+                    const res = await callGemini(`Write a detailed news article about "${topic.title}" in ${currentLang.value} for level ${newsLevel.value}. Include a dual English/Traditional Chinese summary.`, null, schema);
+                    if (res) {
+                        newsArticle.value = res;
+                        newsStep.value = 'article';
+                        newsRevealed.value = false;
+                    }
+                };
+
+                const handleTokenClick = async (event, word) => {
+                    const rawWord = word.replace(/[.,!?;:()"]/g, '');
+                    const { clientX, clientY } = event;
+                    tooltip.value = { x: clientX, y: clientY, word: rawWord, loading: true };
+                    
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            word: { type: Type.STRING },
+                            pos: { type: Type.STRING },
+                            def_en: { type: Type.STRING },
+                            def_cn: { type: Type.STRING }
+                        }
+                    };
+                    const res = await callGemini(`Define the ${currentLang.value} word "${rawWord}" with English and Traditional Chinese meanings.`, null, schema);
+                    if (res) {
+                        tooltip.value = { ...tooltip.value, ...res, loading: false };
+                    } else {
+                        tooltip.value = null;
+                    }
+                };
+
+                const handleScanUpload = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { scannerPreview.value = ev.target.result; };
+                    reader.readAsDataURL(file);
+                };
+
+                const processScan = async () => {
+                    if (!scannerPreview.value) return;
+                    const base64Data = scannerPreview.value.split(',')[1];
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            content: { type: Type.STRING },
+                            extracted_words: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        word: { type: Type.STRING },
+                                        def_en: { type: Type.STRING },
+                                        def_cn: { type: Type.STRING }
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    const res = await callGemini("Extract all text from this image. Identify 5 important vocabulary words with EN/CN meanings.", base64Data, schema);
+                    if (res) scannerResult.value = res;
+                };
+
+                const analyzeGrammar = async () => {
+                    if (!grammarInput.value.trim()) return;
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            grammar_point: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    rule: { type: Type.STRING },
+                                    examples: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                    quiz: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            question: { type: Type.STRING },
+                                            options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                            answer: { type: Type.INTEGER }
+                                        }
+                                    }
+                                }
+                            },
+                            comparison: { type: Type.STRING }
+                        }
+                    };
+                    const res = await callGemini(`Explain the grammar concept "${grammarInput.value}" for ${currentLang.value}. Use English and Traditional Chinese for the explanation.`, null, schema);
+                    if (res) {
+                        grammarResult.value = res;
+                        quizAnswered.value = null;
+                    }
+                };
+
+                const checkQuiz = (idx) => {
+                    quizAnswered.value = idx;
+                };
+
+                const startScenario = async (s) => {
+                    activeScenario.value = s;
+                    chatMessages.value = [];
+                    const res = await callGemini(`Start a ${currentLang.value} roleplay scenario: "${s.title}". You are the native speaker. Greet the user and set the scene. Include a short English/Chinese translation in your reply. Return JSON: {message: string, translation: string}`);
+                    const data = JSON.parse(res);
+                    chatMessages.value.push({ id: Date.now(), role: 'assistant', content: data.message, translation: data.translation });
+                    speak(data.message);
+                };
+
+                const handleChatSubmit = async () => {
+                    if (!chatInput.value.trim()) return;
+                    const msg = chatInput.value;
+                    chatInput.value = '';
+                    chatMessages.value.push({ id: Date.now(), role: 'user', content: msg });
+                    
+                    const historyText = chatMessages.value.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
+                    const res = await callGemini(`Context:\n${historyText}\n\nContinue the roleplay. Response in ${currentLang.value}. Return JSON: {message: string, translation: string}`);
+                    const data = JSON.parse(res);
+                    chatMessages.value.push({ id: Date.now() + 1, role: 'assistant', content: data.message, translation: data.translation });
+                    speak(data.message);
+                };
+
+                const polishJournal = async () => {
+                    if (!journalInput.value.trim()) return;
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            optimized: { type: Type.STRING },
+                            analysis: { type: Type.STRING, description: "Tri-Lingual analysis in EN and Traditional Chinese." }
+                        }
+                    };
+                    const res = await callGemini(`Polish this ${currentLang.value} journal to native level. Current text: "${journalInput.value}"`, null, schema);
+                    if (res) journalResult.value = res;
+                };
+
+                const handleLookup = async () => {
+                    if (!dictQuery.value.trim()) return;
+                    const schema = {
+                        type: Type.OBJECT,
+                        properties: {
+                            term: { type: Type.STRING },
+                            pos: { type: Type.STRING },
+                            definition_en: { type: Type.STRING },
+                            definition_cn: { type: Type.STRING },
+                            related_grammar: { type: Type.STRING },
+                            example: { type: Type.STRING }
+                        }
+                    };
+                    const res = await callGemini(`Contextual lookup for "${dictQuery.value}" in ${currentLang.value}. Use Tri-Lingual support.`, null, schema);
+                    if (res) dictResult.value = res;
+                };
+
+                const saveVocab = (item) => {
+                    if (history.value.vocab.some(v => v.word === item.word)) return alert("Already in history.");
+                    history.value.vocab.unshift({ ...item, lang: currentLang.value });
+                    localStorage.setItem('pm_v11_vocab', JSON.stringify(history.value.vocab));
+                    alert("Added to Knowledge Bank.");
+                };
+
+                const deleteVocab = (idx) => {
+                    history.value.vocab.splice(idx, 1);
+                    localStorage.setItem('pm_v11_vocab', JSON.stringify(history.value.vocab));
+                };
+
+                const saveSettings = () => {
+                    localStorage.setItem('pm_v11_key', settings.value.apiKey);
+                    alert("Settings updated.");
+                };
+
+                const exportHistory = () => {
+                    const blob = new Blob([JSON.stringify(history.value, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `polyglot_history_${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                };
+
+                const factoryReset = () => {
+                    if (confirm("Wipe all data and restart?")) {
+                        localStorage.clear();
+                        window.location.reload();
+                    }
+                };
+
+                onMounted(() => {
+                    window.addEventListener('click', () => { tooltip.value = null; });
+                });
+
+                return {
+                    activeTab, currentLang, isLoading, isRecording, tooltip, quizAnswered,
+                    settings, history, languages, menuItems, scenarios,
+                    newsLevel, newsStep, newsTopics, newsArticle, newsRevealed,
+                    scannerPreview, scannerResult,
+                    grammarInput, grammarResult,
+                    activeScenario, chatMessages, chatInput,
+                    dictQuery, dictResult, journalInput, journalResult,
+                    generateTopics, generateArticle, handleTokenClick, handleScanUpload, processScan, analyzeGrammar, checkQuiz, startScenario, handleChatSubmit, polishJournal, handleLookup, saveVocab, deleteVocab, saveSettings, exportHistory, factoryReset, speak, startSTT
+                };
+            }
+        }).mount('#app');
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

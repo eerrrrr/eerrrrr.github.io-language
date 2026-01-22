@@ -1,0 +1,7 @@
+{
+  "name": "PolyGlot Master",
+  "description": "An AI-native language learning platform specializing in natural usage, nuanced vocabulary, and scenario-based roleplay.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
